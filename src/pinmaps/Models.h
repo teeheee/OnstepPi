@@ -63,6 +63,10 @@
   #define PINMAP_STR "MaxSTM v3"
   #include "Pins.MaxSTM.h"
 #endif
+#if PINMAP == OnstepPi 
+  #define PINMAP_STR "OnstepPi"
+  #include "Pins.OnstepPi.h"
+#endif
 
 // all unassigned pins OFF
 #include "../pinmaps/Pins.defaults.h"
