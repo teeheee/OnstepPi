@@ -1,0 +1,7 @@
+(fp_lib_table
+  (lib (name raspberrypi)(type KiCad)(uri ${KIPRJMOD}/Library/footprints/Raspberry_Pi_2_or_3.pretty)(options "")(descr ""))
+  (lib (name teensy)(type KiCad)(uri ${KIPRJMOD}/Library/footprints/teensy.pretty)(options "")(descr ""))
+  (lib (name tmc2130)(type KiCad)(uri ${KIPRJMOD}/Library/footprints/tmc2130.pretty)(options "")(descr ""))
+  (lib (name stepup)(type KiCad)(uri ${KIPRJMOD}/Library/footprints/yaaj_dcdc_stepdown_lm2596.pretty)(options "")(descr ""))
+  (lib (name custom_components)(type KiCad)(uri ${KIPRJMOD}/Library/footprints/megasaturnv_custom_components.pretty)(options "")(descr ""))
+)
