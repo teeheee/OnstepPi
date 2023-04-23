@@ -115,13 +115,13 @@
 #define AXIS2_SERVO_PH2_PIN    OFF
 
 // For rotator stepper driver
-#define AXIS3_ENABLE_PIN       TMC_ENABLE
+#define AXIS3_ENABLE_PIN       OFF
 #define AXIS3_M0_PIN           OFF               // SPI MOSI
 #define AXIS3_M1_PIN           OFF               // SPI SCK
 #define AXIS3_M2_PIN           OFF               // SPI CS
 #define AXIS3_M3_PIN           OFF               // SPI MISO
-#define AXIS3_STEP_PIN         28
-#define AXIS3_DIR_PIN          29
+#define AXIS3_STEP_PIN         OFF
+#define AXIS3_DIR_PIN          OFF
 
 // For focuser1 stepper driver
 #define AXIS4_ENABLE_PIN       TMC_ENABLE
@@ -133,13 +133,14 @@
 #define AXIS4_DIR_PIN          35
 
 // For focuser2 stepper driver
-#define AXIS5_ENABLE_PIN       OFF
+#define AXIS5_ENABLE_PIN       TMC_ENABLE
 #define AXIS5_M0_PIN           OFF               // SPI MOSI
 #define AXIS5_M1_PIN           OFF               // SPI SCK
 #define AXIS5_M2_PIN           OFF               // SPI CS
 #define AXIS5_M3_PIN           OFF               // SPI MISO
-#define AXIS5_STEP_PIN         OFF
-#define AXIS5_DIR_PIN          OFF
+#define AXIS5_STEP_PIN         28
+#define AXIS5_DIR_PIN          29
+#define AXIS5_SENSE_HOME_PIN   31
 
 // ST4 interface
 #define ST4_RA_W_PIN           OFF                // ST4 RA- West

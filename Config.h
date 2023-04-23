@@ -28,7 +28,8 @@
 #define SERIAL_E_BAUD_DEFAULT         OFF //    OFF, n. Baud rate as above. See (src/pinmaps/) for Serial port assignments.   Infreq
 
 // STATUS --------------------------------------------- see https://onstep.groups.io/g/main/wiki/Configuration_Controller#STATUS_LED
-#define STATUS_LED                    ON //    OFF, Steady illumination if no error, blinks w/error code otherwise.          Option
+#define STATUS_LED                    ON //    OFF, Steady illumination if no error, blinks w/error code otherwise.    
+#define STATUS_LED_ON_STATE    HIGH             // LED Anode (+)      Option
 
 // RETICLE CONTROL ------------------------------- see https://onstep.groups.io/g/main/wiki/Configuration_Controller#RETICLE_CONTROL
 #define RETICLE_LED_DEFAULT           OFF //    OFF, n. Where n=0..255 (0..100%) activates feature sets default brightness.   Option
@@ -230,7 +231,7 @@
 // Typically: A4988, DRV8825, LV8729, S109, TMC2130S, etc.
 
 // AXIS3 ROTATOR --------------------------------------- see https://onstep.groups.io/g/developer/wiki/Configuration_Rotator_Focuser
-#define AXIS3_DRIVER_MODEL            TMC2130S //    OFF, Enter motor driver model (above) to activate the rotator.                Option
+#define AXIS3_DRIVER_MODEL            OFF //    OFF, Enter motor driver model (above) to activate the rotator.                Option
 #define AXIS3_SLEW_RATE_DESIRED       1.0 //    1.0, n, (degrees/second) Maximum speed depends on processor.                  Adjust
 
 // If runtime axis settings are enabled changes in the section below may be ignored unless you reset to defaults:
@@ -268,6 +269,8 @@
 // Typically: A4988, DRV8825, LV8729, S109, TMC2130S, etc.
 
 // AXIS4 FOCUSER 1 ------------------------------------- see https://onstep.groups.io/g/developer/wiki/Configuration_Rotator_Focuser
+#define FOCUSER1 ON
+
 #define AXIS4_DRIVER_MODEL            TMC2130S //    OFF, Enter motor driver model (above) to activate the focuser.                Option
 #define AXIS4_SLEW_RATE_DESIRED       500 //    500, n, Where n=200..5000 (um/s.) Desired (maximum) microns/second.           Adjust
 #define AXIS4_SLEW_RATE_MINIMUM         2 //      2, n. Where n=1..10 (um/s.) Minimum microns/second.                         Adjust
@@ -300,6 +303,38 @@
 #define AXIS4_SENSE_LIMIT_MAX         OFF //    OFF, HIGH or LOW state on limit sense switch stops movement.                  Option
 
 // AXIS5 FOCUSER 2 -----------------------------------------------------------------------------------------------------------------
+#define FOCUSER2 ON
+
+#define AXIS5_DRIVER_MODEL            TMC2130S //    OFF, Enter motor driver model (above) to activate the focuser.                Option
+#define AXIS5_SLEW_RATE_DESIRED       500 //    500, n, Where n=200..5000 (um/s.) Desired (maximum) microns/second.           Adjust
+#define AXIS5_SLEW_RATE_MINIMUM         2 //      2, n. Where n=1..10 (um/s.) Minimum microns/second.                         Adjust
+
+// If runtime axis settings are enabled changes in the section below may be ignored unless you reset to defaults:
+// \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/
+#define AXIS5_STEPS_PER_MICRON        0.5 //    0.5, n. Steps per micrometer. Figure this out by testing or other means.      Adjust
+#define AXIS5_REVERSE                 OFF //    OFF, ON Reverses movement direction, or reverse wiring instead to correct.    Option
+#define AXIS5_LIMIT_MIN                 0 //      0, n. Where n=0..500 (millimeters.) Minimum allowed position.               Adjust
+#define AXIS5_LIMIT_MAX                50 //     50, n. Where n=0..500 (millimeters.) Maximum allowed position.               Adjust
+
+#define AXIS5_DRIVER_MICROSTEPS       OFF //    OFF, n. Microstep mode when tracking.                                         Option
+#define AXIS5_DRIVER_MICROSTEPS_GOTO  OFF //    OFF, n. Microstep mode used during slews. OFF uses _DRIVER_MICROSTEPS.        Option
+
+// for TMC2130, TMC5160, and TMC2209U STEP/DIR driver models:
+#define AXIS5_DRIVER_IHOLD            OFF //    OFF, n, (mA.) Current during standstill. OFF uses IRUN/2.0                    Option
+#define AXIS5_DRIVER_IRUN             OFF //    OFF, n, (mA.) Current during tracking, appropriate for stepper/driver/etc.    Option
+#define AXIS5_DRIVER_IGOTO            OFF //    OFF, n, (mA.) Current during slews. OFF uses IRUN.                            Option
+// /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /
+
+#define AXIS5_DRIVER_STATUS           OFF //    OFF, ON, HIGH, or LOW.  For driver status info/fault detection.               Option
+
+#define AXIS5_DRIVER_DECAY            OFF //    OFF, Tracking decay mode default override. TMC default is STEALTHCHOP.        Infreq
+#define AXIS5_DRIVER_DECAY_GOTO       OFF //    OFF, Decay mode goto default override. TMC default is SPREADCYCLE.            Infreq
+
+#define AXIS5_POWER_DOWN              OFF //    OFF, ON Powers off 30 seconds after movement stops.                           Option
+
+#define AXIS5_SENSE_HOME              LOW //    OFF, HIGH or LOW enables & state clockwise home position, as seen from above. Option
+#define AXIS5_SENSE_LIMIT_MIN         OFF //    OFF, HIGH or LOW state on limit sense switch stops movement.                  Option
+#define AXIS5_SENSE_LIMIT_MAX         OFF //    OFF, HIGH or LOW state on limit sense switch stops movement.                  Option
 // Up to 6 focusers can be present (AXIS4 to AXIS9) simply copy the above text for focuser 1 and rename to AXIS5_ for focuser 2, etc
 
 // FOCUSER TEMPERATURE --------------------------------- see https://onstep.groups.io/g/developer/wiki/Configuration_Rotator_Focuser
