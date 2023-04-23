@@ -4,7 +4,7 @@
 
 #include "../../../Common.h"
 
-#if defined(MOUNT_PRESENT) && GOTO_FEATURE == ON
+#if defined(MOUNT_PRESENT)
 
 #include "../../../libApp/commands/ProcessCmds.h"
 #include "../coordinates/Transform.h"
@@ -45,13 +45,13 @@ class Goto {
     CommandError request();
 
     // goto equatorial position (Native or Mount coordinate system)
-    CommandError request(Coordinate *coords, PierSideSelect pierSideSelect, bool native = true);
+    CommandError request(Coordinate coords, PierSideSelect pierSideSelect, bool native = true);
 
     // sync to equatorial target position (Native coordinate system) using the default preferredPierSide
     CommandError requestSync();
 
     // sync to equatorial position (Native or Mount coordinate system)
-    CommandError requestSync(Coordinate *coords, PierSideSelect pierSideSelect, bool native = true);
+    CommandError requestSync(Coordinate coords, PierSideSelect pierSideSelect, bool native = true);
 
     // get target equatorial position (Native coordinate system)
     inline Coordinate getGotoTarget() { return gotoTarget; }
@@ -59,8 +59,8 @@ class Goto {
     // set target equatorial position (Native coordinate system)
     inline void setGotoTarget(Coordinate *coords) { gotoTarget = *coords; }
 
-    // set goto or sync target
-    CommandError setTarget(Coordinate *coords, PierSideSelect pierSideSelect);
+    // checks for valid target and determines pier side (Mount coordinate system)
+    CommandError setTarget(Coordinate *coords, PierSideSelect pierSideSelect, bool isGoto = true);
 
     // stop any presently active goto
     void stop();
@@ -100,10 +100,18 @@ class Goto {
     // current goto rate in radians per second
     float rate;
 
+    // flag to start tracking if this is the first goto
+    bool firstGoto = true;
+
   private:
 
+    #if GOTO_FEATURE == ON
     // set any additional destinations required for a goto
     void waypoint(Coordinate *current);
+
+    // start slews with approach correction and parking support
+    CommandError startAutoSlew();
+    #endif
 
     // update acceleration rates for goto and guiding
     void updateAccelerationRates();
@@ -111,11 +119,16 @@ class Goto {
     // estimate average microseconds per step lower limit
     float usPerStepLowerLimit();
 
-    // start slews with approach correction and parking support
-    CommandError startAutoSlew();
-
-    Coordinate gotoTarget;
-    Coordinate start, destination, target;
+    // requested goto/sync destination Native coordinate (eq or hor)
+    Coordinate gotoTarget = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, PIER_SIDE_NONE};
+    // goto starts from this Mount coordinate (eq or hor)
+    Coordinate start;
+    // goto next destination Mount coordinate (eq or hor)
+    Coordinate destination;
+    // goto final destination Mount coordinate (eq or hor)
+    Coordinate target = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, PIER_SIDE_NONE};
+    // last align (goto) target Mount coordinate (eq or hor)
+    Coordinate lastAlignTarget = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, PIER_SIDE_NONE};
     GotoStage  stage                = GG_NONE;
     GotoState  stateAbort           = GS_NONE;
     GotoState  stateLast            = GS_NONE;
@@ -127,7 +140,6 @@ class Goto {
 
     AlignState alignState = {0, 0};
 
-    float      usPerStepDefault     = 64.0F;
     float      usPerStepBase        = 128.0F;
     float      radsPerSecondCurrent;
 

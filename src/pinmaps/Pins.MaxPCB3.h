@@ -35,7 +35,7 @@
 #define AUX5_PIN                DAC_PIN(A21)     // AXIS3_EN_PIN; true analog output
 #define AUX6_PIN                DAC_PIN(A22)     // AXIS4_EN_PIN; true analog output
 #define AUX7_PIN                4                // Limit SW
-#define AUX8_PIN                22               // Status2 LED, Reticle LED
+#define AUX8_PIN                22               // Reticle LED, 1-Wire alternate
 
 // Misc. pins
 #ifndef DS3234_CS_PIN
@@ -52,7 +52,7 @@
 
 // The status LED is a two wire jumper with a 10k resistor in series to limit the current to the LED
 #define STATUS_LED_PIN          AUX0_PIN         // Default LED Cathode (-)
-#define MOUNT_STATUS_LED_PIN    AUX0_PIN         // Default LED Cathode (-)
+#define MOUNT_LED_PIN           AUX0_PIN         // Default LED Cathode (-)
 #ifndef RETICLE_LED_PIN 
   #define RETICLE_LED_PIN       AUX8_PIN         // Default LED Cathode (-)
 #endif
@@ -69,6 +69,9 @@
   #define LIMIT_SENSE_PIN       AUX7_PIN         // The limit switch sense is a logic level input normally pull high (2k resistor,) shorted to ground it stops gotos/tracking
 #endif
 
+// hint that the driver mode pins are dedicated (not shared SPI bus except possibly MISO)
+#define DEDICATED_MODE_PINS
+
 // Axis1 RA/Azm step/dir driver
 #define AXIS1_ENABLE_PIN        14
 #define AXIS1_M0_PIN            15               // SPI MOSI
@@ -77,10 +80,11 @@
 #define AXIS1_M3_PIN            AUX1_PIN         // SPI MISO
 #define AXIS1_STEP_PIN          20
 #define AXIS1_DIR_PIN           21
-#define AXIS1_DECAY_PIN         AXIS1_M2_PIN
 #ifndef AXIS1_SENSE_HOME_PIN
   #define AXIS1_SENSE_HOME_PIN  AUX3_PIN
 #endif
+#define AXIS1_SERVO_PH1_PIN     AXIS1_DIR_PIN
+#define AXIS1_SERVO_PH2_PIN     AXIS1_STEP_PIN
 
 // Axis2 Dec/Alt step/dir driver
 #define AXIS2_ENABLE_PIN        9
@@ -90,10 +94,11 @@
 #define AXIS2_M3_PIN            AUX1_PIN         // SPI MISO
 #define AXIS2_STEP_PIN          3
 #define AXIS2_DIR_PIN           2
-#define AXIS2_DECAY_PIN         AXIS2_M2_PIN
 #ifndef AXIS2_SENSE_HOME_PIN
   #define AXIS2_SENSE_HOME_PIN  AUX4_PIN
 #endif
+#define AXIS2_SERVO_PH1_PIN     AXIS2_DIR_PIN
+#define AXIS2_SERVO_PH2_PIN     AXIS2_STEP_PIN
 
 // For rotator stepper driver
 #define AXIS3_ENABLE_PIN        AUX5_PIN
@@ -103,6 +108,8 @@
 #define AXIS3_M3_PIN            AUX1_PIN         // SPI MISO
 #define AXIS3_STEP_PIN          30
 #define AXIS3_DIR_PIN           33
+#define AXIS1_ENCODER_A_PIN     AXIS3_STEP_PIN
+#define AXIS1_ENCODER_B_PIN     AXIS3_DIR_PIN
 
 // For focuser1 stepper driver
 #define AXIS4_ENABLE_PIN        AUX6_PIN
@@ -112,6 +119,8 @@
 #define AXIS4_M3_PIN            AUX1_PIN         // SPI MISO
 #define AXIS4_STEP_PIN          34
 #define AXIS4_DIR_PIN           35
+#define AXIS2_ENCODER_A_PIN     AXIS4_STEP_PIN
+#define AXIS2_ENCODER_B_PIN     AUX1_PIN         // for consistancy, use AXIS4_DIR instead if you like
 
 // For focuser2 stepper driver
 #define AXIS5_ENABLE_PIN        AUX5_PIN

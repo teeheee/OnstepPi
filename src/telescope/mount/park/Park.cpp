@@ -3,7 +3,7 @@
 
 #include "Park.h"
 
-#if defined(MOUNT_PRESENT) && GOTO_FEATURE == ON
+#if defined(MOUNT_PRESENT)
 
 #include "../../../lib/tasks/OnTask.h"
 
@@ -22,7 +22,7 @@ void Park::init() {
   if (ParkSettingsSize < sizeof(ParkSettings)) { nv.initError = true; DL("ERR: Park::Init(), ParkSettingsSize error"); }
 
   // write the default settings to NV
-  if (!nv.hasValidKey()) {
+  if (!nv.hasValidKey() || nv.isNull(NV_MOUNT_PARK_BASE, sizeof(ParkSettings))) {
     VLF("MSG: Mount, park writing defaults to NV");
     nv.writeBytes(NV_MOUNT_PARK_BASE, &settings, sizeof(ParkSettings));
     // set the initial park position at home
@@ -90,7 +90,6 @@ CommandError Park::set() {
 
 // move the mount to the park position
 CommandError Park::request() {
-  #if GOTO_FEATURE == ON
     if (!settings.saved)         return CE_NO_PARK_POSITION_SET;
     if (state == PS_PARKED)      return CE_NONE;
     if (state == PS_PARKING)     return CE_PARK_FAILED;
@@ -133,8 +132,8 @@ CommandError Park::request() {
 
     // goto the park (mount) target coordinate
     VLF("MSG: Mount, parking");
-    if (parkTarget.pierSide == PIER_SIDE_EAST) e = goTo.request(&parkTarget, PSS_EAST_ONLY, false); else
-    if (parkTarget.pierSide == PIER_SIDE_WEST) e = goTo.request(&parkTarget, PSS_WEST_ONLY, false);
+    if (parkTarget.pierSide == PIER_SIDE_EAST) e = goTo.request(parkTarget, PSS_EAST_ONLY, false); else
+    if (parkTarget.pierSide == PIER_SIDE_WEST) e = goTo.request(parkTarget, PSS_WEST_ONLY, false);
 
     if (e != CE_NONE) {
       mount.tracking(wasTracking);
@@ -146,7 +145,6 @@ CommandError Park::request() {
       VF(": Mount::parkGoto(), Failed to start goto (CE "); V(e); VL(")");
       return e;
     }
-  #endif
   return CE_NONE;
 }
 
@@ -222,35 +220,39 @@ CommandError Park::restore(bool withTrackingOn) {
     wormSenseSteps = settings.wormSensePositionSteps;
   #endif
 
-  // reset the mount, zero backlash
-  home.reset();
-  axis1.setBacklashSteps(0);
-  axis2.setBacklashSteps(0);
+  // don't bother unparking if there are absolute encoders since it's irrelevant
+  if (AXIS1_SYNC_THRESHOLD == OFF) {
 
-  // load the pointing model
-  #if ALIGN_MAX_NUM_STARS > 1  
-    transform.align.modelRead();
-  #endif
+    // reset the mount, zero backlash
+    home.reset();
+    axis1.setBacklashSteps(0);
+    axis2.setBacklashSteps(0);
 
-  // get the park coordinate ready
-  Coordinate parkTarget;
-  parkTarget.h = settings.position.h;
-  parkTarget.d = settings.position.d;
-  parkTarget.pierSide = settings.position.pierSide;
+    // load the pointing model
+    #if ALIGN_MAX_NUM_STARS > 1  
+      transform.align.modelRead();
+    #endif
 
-  // set the mount target
-  double a1, a2;
-  if (transform.mountType == ALTAZM) transform.equToHor(&parkTarget);
-  transform.mountToInstrument(&parkTarget, &a1, &a2);
-  axis1.setInstrumentCoordinatePark(a1);
-  axis2.setInstrumentCoordinatePark(a2);
+    // get the park coordinate ready
+    Coordinate parkTarget;
+    parkTarget.h = settings.position.h;
+    parkTarget.d = settings.position.d;
+    parkTarget.pierSide = settings.position.pierSide;
 
-  VF("MSG: Mount, unpark axis1 motor position "); VL(axis1.getMotorPositionSteps());
-  VF("MSG: Mount, unpark axis2 motor position "); VL(axis2.getMotorPositionSteps());
+    // set the mount target
+    double a1, a2;
+    if (transform.mountType == ALTAZM) transform.equToHor(&parkTarget);
+    transform.mountToInstrument(&parkTarget, &a1, &a2);
+    axis1.setInstrumentCoordinatePark(a1);
+    axis2.setInstrumentCoordinatePark(a2);
 
-  // restore backlash settings
-  axis1.setBacklash(mount.settings.backlash.axis1);
-  axis2.setBacklash(mount.settings.backlash.axis2);
+    VF("MSG: Mount, unpark axis1 motor position "); VL(axis1.getMotorPositionSteps());
+    VF("MSG: Mount, unpark axis2 motor position "); VL(axis2.getMotorPositionSteps());
+
+    // restore backlash settings
+    axis1.setBacklash(mount.settings.backlash.axis1);
+    axis2.setBacklash(mount.settings.backlash.axis2);
+  }
   
   state = PS_UNPARKED;
   settings.state = state;

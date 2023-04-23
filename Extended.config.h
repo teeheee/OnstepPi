@@ -18,13 +18,13 @@
 // DEBUG ---------------------------------------------------------------------------------------------------------------------------
 // Enable additional debugging and/or status messages on the specified SERIAL_DEBUG port
 // Note that the SERIAL_DEBUG port cannot be used for normal communication with OnStep
-#define DEBUG                     VERBOSE //    OFF, Use ON for background error messages only, use VERBOSE for all           Infreq
+#define DEBUG                         OFF //    OFF, Use ON for background error messages only, use VERBOSE for all           Infreq
                                           //         error and status messages, use CONSOLE for VT100 debug console,
                                           //         or use PROFILER for VT100 task profiler.
 #define DEBUG_SERVO                   5 //    OFF, n. Where n=1 to 9 as the designated axis for logging servo activity.     Option
 #define DEBUG_ECHO_COMMANDS           OFF //    OFF, Use ON or ERRORS_ONLY to log commands to the debug serial port.          Option
 #define SERIAL_DEBUG               Serial // Serial, Use any available h/w serial port. Serial1 or Serial2, etc.              Option
-#define SERIAL_DEBUG_BAUD          9600 //   9600, n. Where n=9600,19200,57600,115200 (common baud rates.)                  Option
+#define SERIAL_DEBUG_BAUD            9600 //   9600, n. Where n=9600,19200,57600,115200 (common baud rates.)                  Option
 
 // NON-VOLATILE STORAGE ------------------------------------------------------------------------------------------------------------
 #define NV_WIPE                       OFF //         OFF, Causes the defaults to be written back into NV (FLASH,EEPROM,etc.)  Infreq
@@ -37,6 +37,7 @@
 #define SERIAL_BT_MODE                OFF //    OFF, Use SLAVE to enable the interface (ESP32 only.)                          Option
 #define SERIAL_BT_NAME          "OnStepX" //         "OnStepX", Bluetooth device name.                                        Adjust
 #define SERIAL_IP_MODE                OFF //    OFF, WIFI_ACCESS_POINT or WIFI_STATION enables interface (ESP32 only.)        Option
+#define WEB_SERVER                    OFF //    OFF, ON enables Webserver (for Website plugin)                                Option
 
 // EXTERNAL GPIO SUPPORT -----------------------------------------------------------------------------------------------------------
 #define GPIO_DEVICE                   OFF //    OFF, DS2413: for 2-ch or 4-ch using 1-wire gpio's (one or two devices.)       Option

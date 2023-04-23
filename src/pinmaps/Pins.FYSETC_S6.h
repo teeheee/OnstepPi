@@ -90,8 +90,12 @@
 #define PEC_SENSE_PIN           PA1              // PEC Sense, analog or digital (on X+ so it can have 3v3 or 5v on adjacent pin)
 
 // The status LED is a two wire jumper with a 10k resistor in series to limit the current to the LED
-#define STATUS_LED_PIN          PC6              // Drain (on EXP2) One could perhaps move these to the RGB leds, there's a header but no +5V present on it.
-#define MOUNT_STATUS_LED_PIN    PC6              // Drain (on EXP2 shared with Reticle/BME280_CS)
+#ifndef STATUS_LED_PIN
+  #define STATUS_LED_PIN        PC6              // Drain (on EXP2) One could perhaps move these to the RGB leds, there's a header but no +5V present on it.
+#endif
+#ifndef MOUNT_LED_PIN
+  #define MOUNT_LED_PIN         PC6              // Drain (on EXP2 shared with Reticle/BME280_CS)
+#endif
 #ifndef RETICLE_LED_PIN 
   #define RETICLE_LED_PIN       PC7              // Drain (on EXP2 shared with LED2/BME280_CS)
 #endif
@@ -145,7 +149,6 @@
 #define AXIS1_M3_PIN            SS_MISO          // SPI MISO (UART RX)
 #define AXIS1_STEP_PIN          PE11
 #define AXIS1_DIR_PIN           PE10
-#define AXIS1_DECAY_PIN         AXIS1_M2_PIN
 #define AXIS1_FAULT_PIN         AXIS1_M3_PIN
 #ifndef AXIS1_SENSE_HOME_PIN
   #define AXIS1_SENSE_HOME_PIN  PB14             // (on X-)
@@ -159,7 +162,6 @@
 #define AXIS2_M3_PIN            SS_MISO          // SPI MISO (UART RX)
 #define AXIS2_STEP_PIN          PD8
 #define AXIS2_DIR_PIN           PB12
-#define AXIS2_DECAY_PIN         AXIS2_M2_PIN
 #define AXIS2_FAULT_PIN         AXIS2_M3_PIN
 #ifndef AXIS2_SENSE_HOME_PIN
   #define AXIS2_SENSE_HOME_PIN  PB13             // (on Y-)

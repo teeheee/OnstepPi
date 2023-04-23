@@ -3,7 +3,7 @@
 
 #include "Goto.h"
 
-#if defined(MOUNT_PRESENT) && GOTO_FEATURE == ON
+#if defined(MOUNT_PRESENT)
 
 #include "../../../lib/tasks/OnTask.h"
 
@@ -16,14 +16,16 @@
 #include "../limits/Limits.h"
 #include "../status/Status.h"
 
+#if GOTO_FEATURE == ON
 inline void gotoWrapper() { goTo.poll(); }
+#endif
 
 void Goto::init() {
   // confirm the data structure size
   if (GotoSettingsSize < sizeof(GotoSettings)) { nv.initError = true; DLF("ERR: Goto::init(), GotoSettingsSize error"); }
 
   // write the default settings to NV
-  if (!nv.hasValidKey()) {
+  if (!nv.hasValidKey() || nv.isNull(NV_MOUNT_GOTO_BASE, sizeof(GotoSettings))) {
     VLF("MSG: Mount, goto writing defaults to NV");
     nv.writeBytes(NV_MOUNT_GOTO_BASE, &settings, sizeof(GotoSettings));
   }
@@ -43,33 +45,43 @@ void Goto::init() {
   #endif
 
   // calculate base and current maximum step rates
-  usPerStepBase = 1000000.0/((axis1.getStepsPerMeasure()/RAD_DEG_RATIO)*SLEW_RATE_BASE_DESIRED);
-  #if SLEW_RATE_MEMORY != ON
+  #if GOTO_FEATURE == ON
+    usPerStepBase = 1000000.0F/((axis1.getStepsPerMeasure()/RAD_DEG_RATIO)*SLEW_RATE_BASE_DESIRED);
+    #if SLEW_RATE_MEMORY != ON
+      settings.usPerStepCurrent = usPerStepBase;
+    #endif
+  #else
+    usPerStepBase = 1000000.0F/((axis1.getStepsPerMeasure()/RAD_DEG_RATIO)*1.0F);
     settings.usPerStepCurrent = usPerStepBase;
   #endif
   if (usPerStepBase < usPerStepLowerLimit()) usPerStepBase = usPerStepLowerLimit()*2.0F;
   if (settings.usPerStepCurrent > 1000000.0F) settings.usPerStepCurrent = usPerStepBase;
   if (settings.usPerStepCurrent < usPerStepBase/2.0F) settings.usPerStepCurrent = usPerStepBase/2.0F;
   if (settings.usPerStepCurrent > usPerStepBase*2.0F) settings.usPerStepCurrent = usPerStepBase*2.0F;
+
   updateAccelerationRates();
 }
 
 // goto to equatorial target position (Native coordinate system) using the defaut preferredPierSide
 CommandError Goto::request() {
-  return request(&target, settings.preferredPierSide);
+  return request(target, settings.preferredPierSide);
 }
 
+#if GOTO_FEATURE == ON
+
 // goto equatorial position (Native or Mount coordinate system)
-CommandError Goto::request(Coordinate *coords, PierSideSelect pierSideSelect, bool native) {
+CommandError Goto::request(Coordinate coords, PierSideSelect pierSideSelect, bool native) {
 
   if (native) {
-    coords->pierSide = PIER_SIDE_NONE;
-    transform.nativeToMount(coords);
+    coords.pierSide = PIER_SIDE_NONE;
+    transform.nativeToMount(&coords);
   }
 
-  CommandError e = setTarget(coords, pierSideSelect);
+  CommandError e = setTarget(&coords, pierSideSelect);
   if (e == CE_SLEW_IN_SLEW) { stop(); return e; }
   if (e != CE_NONE) return e;
+
+  lastAlignTarget = target;
 
   // handle special case of a tangent arm mount
   #if AXIS2_TANGENT_ARM == ON
@@ -82,7 +94,10 @@ CommandError Goto::request(Coordinate *coords, PierSideSelect pierSideSelect, bo
 
   limits.enabled(true);
   mount.syncToEncoders(false);
-  if (mount.isHome()) mount.tracking(true);
+  if (firstGoto) {
+    mount.tracking(true);
+    firstGoto = false;
+  }
   guide.backlashEnableControl(true);
 
   // allow slewing near target for Eq modes if not too close to the poles
@@ -130,23 +145,42 @@ CommandError Goto::request(Coordinate *coords, PierSideSelect pierSideSelect, bo
 
   return CE_NONE;
 }
+#else
+
+// sync replaces goto to equatorial position (Native or Mount coordinate system) when GOTO_FEATURE is OFF
+CommandError Goto::request(Coordinate coords, PierSideSelect pierSideSelect, bool native) {
+  mountStatus.sound.alert();
+
+  CommandError result = requestSync(coords, pierSideSelect, native);
+
+  // check if parking and mark as finished or unparked as needed
+  if (park.state == PS_PARKING) park.requestDone();
+
+  // check if homing
+  if (home.state == HS_HOMING) home.requestDone();
+
+  return result;
+}
+#endif
 
 // sync to equatorial target position (Native coordinate system) using the default preferredPierSide
 CommandError Goto::requestSync() {
-  return requestSync(&target, settings.preferredPierSide);
+  return requestSync(target, settings.preferredPierSide);
 }
 
 // sync to equatorial position (Native or Mount coordinate system)
-CommandError Goto::requestSync(Coordinate *coords, PierSideSelect pierSideSelect, bool native) {
+CommandError Goto::requestSync(Coordinate coords, PierSideSelect pierSideSelect, bool native) {
   
   if (native) {
-    coords->pierSide = PIER_SIDE_NONE;
-    transform.nativeToMount(coords);
+    coords.pierSide = PIER_SIDE_NONE;
+    transform.nativeToMount(&coords);
   }
 
-  CommandError e = setTarget(coords, pierSideSelect);
+  CommandError e = setTarget(&coords, pierSideSelect, false);
   if (e != CE_NONE) return e;
   
+  if (mount.isHome()) mount.tracking(true);
+
   double a1, a2;
   transform.mountToInstrument(&target, &a1, &a2);
   axis1.setInstrumentCoordinate(a1);
@@ -154,18 +188,21 @@ CommandError Goto::requestSync(Coordinate *coords, PierSideSelect pierSideSelect
 
   limits.enabled(true);
   mount.syncToEncoders(true);
-  if (mount.isHome()) mount.tracking(true);
 
   VLF("MSG: Mount, sync instrument coordinates updated");
 
   return CE_NONE;
 }
 
-// converts from native to mount coordinates and checks for valid target
-CommandError Goto::setTarget(Coordinate *coords, PierSideSelect pierSideSelect) {
+// checks for valid target and determines pier side (Mount coordinate system)
+CommandError Goto::setTarget(Coordinate *coords, PierSideSelect pierSideSelect, bool isGoto) {
 
   CommandError e = validate();
-  if (e == CE_SLEW_ERR_IN_STANDBY && mount.isHome()) { mount.enable(true); e = validate(); }
+  if (e == CE_SLEW_ERR_IN_STANDBY && (mount.isHome() || AXIS1_SYNC_THRESHOLD != OFF || AXIS1_TARGET_TOLERANCE != OFF)) {
+    mount.enable(true);
+    e = validate();
+  }
+  if (e == CE_NONE && isGoto && limits.isAboveOverhead()) e = CE_SLEW_ERR_OUTSIDE_LIMITS;
   if (e != CE_NONE) return e;
 
   target = *coords;
@@ -179,7 +216,7 @@ CommandError Goto::setTarget(Coordinate *coords, PierSideSelect pierSideSelect) 
   Coordinate current = mount.getMountPosition(CR_MOUNT);
 
   target.pierSide = current.pierSide;
-  e = limits.validateCoords(&target);
+  e = limits.validateTarget(&target);
   if (e != CE_NONE) return e;
 
   if (transform.meridianFlips) {
@@ -260,6 +297,7 @@ CommandError Goto::setTarget(Coordinate *coords, PierSideSelect pierSideSelect) 
   if (target.pierSide != PIER_SIDE_WEST) target.pierSide = PIER_SIDE_EAST;
 
   if (transform.mountType == ALTAZM) transform.horToEqu(&target); else transform.equToHor(&target);
+  transform.observedPlaceToMount(&target);
   transform.hourAngleToRightAscension(&target, false);
 
   return CE_NONE;
@@ -280,6 +318,7 @@ CommandError Goto::validate() {
   if (state != GS_NONE)        return CE_SLEW_IN_SLEW;
   if (guide.state != GU_NONE)  return CE_SLEW_IN_MOTION;
   if (mount.isSlewing())       return CE_SLEW_IN_MOTION;
+  if (limits.isGotoError())    return CE_SLEW_ERR_OUTSIDE_LIMITS;
   return CE_NONE;
 }
 
@@ -294,7 +333,7 @@ CommandError Goto::alignAddStar() {
     #if ALIGN_MAX_NUM_STARS > 1  
       transform.align.init(transform.mountType, site.location.latitude);
     #endif
-    e = requestSync(&gotoTarget, settings.preferredPierSide);
+    e = requestSync(gotoTarget, settings.preferredPierSide);
   }
 
   // add an align star
@@ -302,11 +341,11 @@ CommandError Goto::alignAddStar() {
     Coordinate mountPosition = mount.getMountPosition(CR_MOUNT_ALL);
 
     // update the targets HA and Horizon coords as necessary
-    transform.rightAscensionToHourAngle(&gotoTarget, true);
-    if (transform.mountType == ALTAZM) transform.equToHor(&gotoTarget);
+    transform.rightAscensionToHourAngle(&lastAlignTarget, true);
+    if (transform.mountType == ALTAZM) transform.equToHor(&lastAlignTarget);
 
     #if ALIGN_MAX_NUM_STARS > 1
-      e = transform.align.addStar(alignState.currentStar, alignState.lastStar, &target, &mountPosition);
+      e = transform.align.addStar(alignState.currentStar, alignState.lastStar, &lastAlignTarget, &mountPosition);
     #endif
     if (e == CE_NONE) alignState.currentStar++;
   }
@@ -323,6 +362,7 @@ void Goto::alignReset() {
   #endif
 }
 
+#if GOTO_FEATURE == ON
 // set any additional destinations required for a goto
 void Goto::waypoint(Coordinate *current) {
   // HA goes from +90...0..-90
@@ -355,39 +395,6 @@ void Goto::waypoint(Coordinate *current) {
       if (current->d >= -Deg90 - site.location.latitude) { destination.h = d45; stage = GG_WAYPOINT_AVOID; }
     }
   }
-}
-
-// update acceleration rates for goto and guiding
-void Goto::updateAccelerationRates() {
-  radsPerSecondCurrent = (1000000.0F/settings.usPerStepCurrent)/(float)axis1.getStepsPerMeasure();
-  rate = radsPerSecondCurrent;
-  float secondsToAccelerate = (degToRadF((float)(SLEW_ACCELERATION_DIST))/radsPerSecondCurrent)*2.0F;
-  float radsPerSecondPerSecond = radsPerSecondCurrent/secondsToAccelerate;
-  axis1.setSlewAccelerationRate(radsPerSecondPerSecond);
-  axis1.setSlewAccelerationRateAbort(radsPerSecondPerSecond*2.0F);
-  axis2.setSlewAccelerationRate(radsPerSecondPerSecond);
-  axis2.setSlewAccelerationRateAbort(radsPerSecondPerSecond*2.0F);
-}
-
-// estimate average microseconds per step lower limit
-float Goto::usPerStepLowerLimit() {
-  // basis is platform/clock-rate specific (for square wave)
-  float r_us = HAL_MAXRATE_LOWER_LIMIT;
-  
-  // higher speed ISR code path?
-  #if STEP_WAVE_FORM == PULSE || STEP_WAVE_FORM == DEDGE
-    r_us /= 1.6F;
-  #endif
-
-  // average required goto us rates for each axis with any micro-step mode switching applied
-  float r_us_axis1 = r_us/axis1.getStepsPerStepSlewing();
-  float r_us_axis2 = r_us/axis2.getStepsPerStepSlewing();
-
-  // average in axis2 step rate scaling for drives where the reduction ratio isn't equal
-  r_us = (r_us_axis1 + r_us_axis2)/2.0F;
-
-  // return rate in us units
-  return r_us;
 }
 
 // monitor goto
@@ -475,6 +482,8 @@ void Goto::poll() {
   if (!axis1.nearTarget() || !axis2.nearTarget()) nearTargetTimeout = millis();
 
   if (mount.isTracking()) {
+    target.r += siderealToRad(mount.trackingRateOffsetRA)/FRACTIONAL_SEC;
+    target.d += siderealToRad(mount.trackingRateOffsetDec)/FRACTIONAL_SEC;
     transform.rightAscensionToHourAngle(&target, false);
     if (stage == GG_NEAR_DESTINATION || stage == GG_DESTINATION) {
       if (millis() - nearTargetTimeout < 4000) {
@@ -513,14 +522,53 @@ CommandError Goto::startAutoSlew() {
     axis2.setTargetCoordinate(a2);
   }
 
-  VF("MSG: Mount, goto target coordinates set (a1="); V(radToDeg(a1)); V("deg, a2="); V(radToDeg(a2)); DL(" deg)");
+  VF("MSG: Mount, goto target coordinates set (a1="); V(radToDeg(a1)); VF("deg, a2="); V(radToDeg(a2)); VLF(" deg)");
 
-  e = axis1.autoGoto(degToRadF((float)(SLEW_ACCELERATION_DIST)), radsPerSecondCurrent);
-  if (e == CE_NONE) e = axis2.autoGoto(degToRadF((float)(SLEW_ACCELERATION_DIST)), radsPerSecondCurrent*((float)(AXIS2_SLEW_RATE_PERCENT)/100.0F));
+  e = axis1.autoGoto(radsPerSecondCurrent);
+  if (e == CE_NONE) e = axis2.autoGoto(radsPerSecondCurrent*((float)(AXIS2_SLEW_RATE_PERCENT)/100.0F));
 
   nearTargetTimeout = millis();
 
   return e;
+}
+#endif
+
+// update acceleration rates for goto and guiding
+void Goto::updateAccelerationRates() {
+  radsPerSecondCurrent = (1000000.0F/settings.usPerStepCurrent)/(float)axis1.getStepsPerMeasure();
+  rate = radsPerSecondCurrent;
+  #if GOTO_FEATURE == ON
+    float secondsToAccelerate = (degToRadF((float)(SLEW_ACCELERATION_DIST))/radsPerSecondCurrent)*2.0F;
+    float secondsToAccelerateAbort = (degToRadF((float)(SLEW_RAPID_STOP_DIST))/radsPerSecondCurrent)*2.0F;
+  #else
+    float secondsToAccelerate = (degToRadF((float)(5.0F))/radsPerSecondCurrent)*2.0F;
+    float secondsToAccelerateAbort = (degToRadF((float)(2.0F))/radsPerSecondCurrent)*2.0F;
+  #endif
+  axis1.setSlewAccelerationRate(radsPerSecondCurrent/secondsToAccelerate);
+  axis1.setSlewAccelerationRateAbort(radsPerSecondCurrent/secondsToAccelerateAbort);
+  axis2.setSlewAccelerationRate(radsPerSecondCurrent/secondsToAccelerate);
+  axis2.setSlewAccelerationRateAbort(radsPerSecondCurrent/secondsToAccelerateAbort);
+}
+
+// estimate average microseconds per step lower limit
+float Goto::usPerStepLowerLimit() {
+  // basis is platform/clock-rate specific (for square wave)
+  float r_us = HAL_MAXRATE_LOWER_LIMIT;
+  
+  // higher speed ISR code path?
+  #if STEP_WAVE_FORM == PULSE || STEP_WAVE_FORM == DEDGE
+    r_us /= 1.6F;
+  #endif
+
+  // average required goto us rates for each axis with any micro-step mode switching applied
+  float r_us_axis1 = r_us/axis1.getStepsPerStepSlewing();
+  float r_us_axis2 = r_us/axis2.getStepsPerStepSlewing();
+
+  // average in axis2 step rate scaling for drives where the reduction ratio isn't equal
+  r_us = (1.0F/(1.0F/r_us_axis1 + 1.0F/r_us_axis2))*2.0F;
+
+  // return rate in us units
+  return r_us;
 }
 
 Goto goTo;

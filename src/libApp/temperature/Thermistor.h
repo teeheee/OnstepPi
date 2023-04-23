@@ -23,7 +23,7 @@ class Thermistor {
 
     // nine temperature sensors are supported, this gets the averaged
     // temperature in deg. C otherwise it falls back to the weather sensor temperature
-    // index 0 is the focuser temperature, 1 through 8 are auxiliary features #1, #2, etc.
+    // index 0 is the ambient temperature, 1 through 8 are point temperatures #1, #2, etc.
     // returns NAN if no temperature source is available or if a communications failure
     // results in no valid readings for > 30 seconds
     float getChannel(int index);
@@ -37,7 +37,10 @@ class Thermistor {
     float averageTemperature[9] = { NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN };
     unsigned long goodUntil[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-    ThermistorSettings settings[2] = { { THERMISTOR1_TNOM, THERMISTOR1_RNOM, THERMISTOR1_BETA, THERMISTOR1_RSERIES }, { THERMISTOR2_TNOM, THERMISTOR2_RNOM, THERMISTOR2_BETA, THERMISTOR2_RSERIES } };
+    ThermistorSettings settings[2] = {
+      { THERMISTOR1_TNOM, THERMISTOR1_RNOM, THERMISTOR1_BETA, THERMISTOR1_RSERIES },
+      { THERMISTOR2_TNOM, THERMISTOR2_RNOM, THERMISTOR2_BETA, THERMISTOR2_RSERIES }
+    };
 };
 
 extern Thermistor temperature;

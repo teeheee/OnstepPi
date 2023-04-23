@@ -3,7 +3,7 @@
 
 #include "Library.h"
 
-#if defined(MOUNT_PRESENT) && GOTO_FEATURE == ON
+#if defined(MOUNT_PRESENT)
 
 #include "../../Telescope.h"
 
@@ -24,7 +24,7 @@ void Library::init() {
   if (recMax == 0) { VLF("WRN: Library::init(); recMax == 0, no library space available"); return; }
 
   // write default library structure to NV
-  if (!nv.hasValidKey()) {
+  if (!nv.hasValidKey() || nv.isNull(byteMin, byteCount)) {
     VLF("MSG: Mount, library clearing NV storage area");
     clearAll();
   }

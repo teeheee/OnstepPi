@@ -9,6 +9,10 @@
 
 #include "../ServoDriver.h"
 
+#ifndef ANALOG_WRITE_RANGE
+  #define ANALOG_WRITE_RANGE 255
+#endif
+
 typedef struct ServoDcPins {
   int16_t in1;
   uint8_t inState1;
@@ -34,8 +38,11 @@ class ServoDc : public ServoDriver {
     // decodes driver model and sets up the pin modes
     void init();
 
-    // set motor velocity by adjusting power (0 to ANALOG_WRITE_PWM_RANGE for 0 to 100% power)
-    void setMotorVelocity(float power);
+    // enable or disable the driver using the enable pin or other method
+    void enable(bool state);
+
+    // set motor velocity by adjusting power (0 to ANALOG_WRITE_RANGE for 0 to 100% power)
+    float setMotorVelocity(float power);
 
     // update status info. for driver
     void updateStatus();
@@ -48,6 +55,7 @@ class ServoDc : public ServoDriver {
 
     const ServoDcPins *Pins;
 
+    float currentVelocity = 0.0F;
     float acceleration;
     float accelerationFs;
 };

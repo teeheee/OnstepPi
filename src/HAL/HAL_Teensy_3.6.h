@@ -10,15 +10,18 @@
 // turn on support for using DACs to output digital signals using Arduino standard commands
 #define HAL_DAC_AS_DIGITAL
 
-// 1/2000 second sidereal timer
-#define HAL_FRACTIONAL_SEC 2000.0F
+// 1/500 second sidereal timer
+#define HAL_FRACTIONAL_SEC 500.0F
 
-// This platform has up to 16 bit PWM
-#ifndef ANALOG_WRITE_PWM_BITS
-  #define ANALOG_WRITE_PWM_BITS 12
+// Analog read and write
+#ifndef ANALOG_READ_RANGE
+  #define ANALOG_READ_RANGE 1023
 #endif
-#ifndef ANALOG_WRITE_PWM_RANGE
-  #define ANALOG_WRITE_PWM_RANGE 4095
+#ifndef ANALOG_WRITE_RANGE
+  #define ANALOG_WRITE_RANGE 4095
+#endif
+#ifndef ANALOG_WRITE_PWM_BITS
+  #define ANALOG_WRITE_PWM_BITS 12 // up to 16 bits
 #endif
 #ifndef ANALOG_WRITE_PWM_FREQUENCY
   #define ANALOG_WRITE_PWM_FREQUENCY 14648.437
@@ -36,30 +39,6 @@
   #define HAL_PULSE_WIDTH 400  // in ns, estimated
 #endif
 #define HAL_FAST_PROCESSOR
-
-// New symbols for the Serial ports so they can be remapped if necessary -----------------------------
-
-// SerialA is manidatory
-#define SERIAL_A Serial
-// SerialB is optional
-#if SERIAL_B_BAUD_DEFAULT != OFF
-  #define SERIAL_B Serial1
-#endif
-// SerialC is optional
-#if SERIAL_C_BAUD_DEFAULT != OFF
-  #define SERIAL_C Serial4
-#endif
-// SerialD/E are optional
-#if defined(USB_DUAL_SERIAL) || defined(USB_TRIPLE_SERIAL)
-  #if defined(SERIAL_D_BAUD_DEFAULT) && SERIAL_D_BAUD_DEFAULT != OFF
-    #define SERIAL_D SerialUSB1
-  #endif
-#endif
-#if defined(USB_TRIPLE_SERIAL)
-  #if defined(SERIAL_E_BAUD_DEFAULT) && SERIAL_E_BAUD_DEFAULT != OFF
-    #define SERIAL_E SerialUSB2
-  #endif
-#endif
 
 // New symbol for the default I2C port -------------------------------------------------------------
 #include <Wire.h>

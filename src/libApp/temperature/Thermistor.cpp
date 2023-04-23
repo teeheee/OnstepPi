@@ -9,6 +9,10 @@
 
 #include "../weather/Weather.h"
 
+#ifndef ANALOG_READ_RANGE
+  #define ANALOG_READ_RANGE 1023
+#endif
+
 void thermistorWrapper() { temperature.poll(); }
 
 // prepare for operation
@@ -20,8 +24,8 @@ bool Thermistor::init() {
 
   if (deviceCount > 0) {
     found = true;
-    VF("MSG: Temperature, start Thermistor monitor task (rate 100ms priority 6)... ");
-    if (tasks.add(100, 0, true, 6, thermistorWrapper, "therm")) { VLF("success"); } else { VLF("FAILED!"); }
+    VF("MSG: Temperature, start Thermistor monitor task (rate 500ms priority 6)... ");
+    if (tasks.add(500, 0, true, 6, thermistorWrapper, "therm")) { VLF("success"); } else { VLF("FAILED!"); }
   } else found = false;
 
   found = true;
@@ -30,7 +34,7 @@ bool Thermistor::init() {
   return found;
 }
 
-// read devices, designed for a 0.1s polling interval
+// read devices, designed for a 0.5s polling interval
 void Thermistor::poll() {
   static int index = 0;
 
@@ -44,7 +48,7 @@ void Thermistor::poll() {
       int r = analogRead(devicePin[index]);
 
       // calculate the device resistance
-      float resistance = 1023.0F/r - 1.0F;
+      float resistance = (float)(ANALOG_READ_RANGE)/r - 1.0F;
       resistance = settings[thermistorType].rSeries / resistance;
 
       // convert to temperature in degrees C
@@ -73,7 +77,7 @@ void Thermistor::poll() {
 
 // nine temperature sensors are supported, this gets the averaged temperature
 // in deg. C otherwise it falls back to the weather sensor temperature
-// index 0 is the focuser temperature, 1 through 8 are auxiliary features #1, #2, etc.
+// index 0 is the ambient temperature, 1 through 8 are point temperatures #1, #2, etc.
 // returns NAN if no temperature source is available or if a communications failure
 // results in no valid readings for > 30 seconds
 float Thermistor::getChannel(int index) {

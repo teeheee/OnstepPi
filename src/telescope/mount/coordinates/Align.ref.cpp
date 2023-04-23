@@ -1,17 +1,14 @@
 // -----------------------------------------------------------------------------------
-// GEOMETRIC ALIGN FOR EQ MOUNTS
+// GOTO ASSIST GEOMETRIC ALIGN FOR ALT/AZM AND EQ MOUNTS (REFERENCE DESIGN)
 //
 // by Howard Dutton
 //
 // Copyright (C) 2012 to 2021 Howard Dutton
 //
 
-// -----------------------------------------------------------------------------------
-// ADVANCED GEOMETRIC ALIGN FOR EQUATORIAL MOUNTS (GOTO ASSIST)
+#include "Align.ref.h"
 
-#include "Align.h"
-
-#ifdef MOUNT_PRESENT
+#if defined(MOUNT_PRESENT) && !defined(HIGH_SPEED_ALIGN)
 
 #include "../../../lib/tasks/OnTask.h"
 
@@ -35,7 +32,6 @@ void GeoAlign::init(int8_t mountType, float latitude) {
     sinLat = sinf(latitude);
   }
 }
-
 
 void GeoAlign::modelRead() {
   // get misc settings from NV
@@ -132,7 +128,8 @@ void GeoAlign::correct(float a1, float a2, float pierSide, float sf, float _deo,
   float DF,DFd,TF,FF,FFd,TFh,TFd;
 
   float cosA2 = cosf(a2);
-  float tanA2 = tanf(a2);
+  float sinA2 = sinf(a2);
+  float tanA2 = sinA2/cosA2;
   float sinA1 = sinf(a1);
   float cosA1 = cosf(a1);
 
@@ -179,7 +176,7 @@ void GeoAlign::correct(float a1, float a2, float pierSide, float sf, float _deo,
   TF  = _tf*sf;
 
   TFh = TF*(cosLat*sinA1*(1.0/cosA2));
-  TFd = TF*(cosLat*cosA1-sinLat*cosA2);
+  TFd = TF*(cosLat*cosA1*sinA2-sinLat*cosA2);
 
   // ------------------------------------------------------------
   *a1r  = (-PZ*cosA1*tanA2 + PA*sinA1*tanA2 + DOh +  PDh +       TFh);
@@ -411,7 +408,7 @@ void GeoAlign::observedPlaceToMount(Coordinate *coord) {
       // becomes an (up) offset.  Unchanged with meridian flips.
       // expressed as a correction to the Zenith axis misalignment
       float DOh = model.doCor*(1.0F/cosAx2)*p;
-  
+
       // ------------------------------------------------------------
       // misalignment due to Alt axis being perp. to Azm axis
       float PDh = -model.pdCor*(sinAx2/cosAx2)*p;
@@ -419,11 +416,11 @@ void GeoAlign::observedPlaceToMount(Coordinate *coord) {
       // Fork or Axis flex
       float DFd;
       if (mountType == FORK || mountType == ALTAZM) DFd = model.dfCor*cosAx1; else DFd = -model.dfCor*(cosLat*cosAx1 + sinLat*(sinAx2/cosAx2));
-  
+
       // Tube flex
       float TFh = model.tfCor*(cosLat*sinAx1*(1.0F/cosAx2));
-      float TFd = model.tfCor*(cosLat*cosAx1 - sinLat*cosAx2);
-  
+      float TFd = model.tfCor*(cosLat*cosAx1*sinAx2 - sinLat*cosAx2);
+
       // polar misalignment
       float ax1c = -model.azmCor*cosAx1*(sinAx2/cosAx2) + model.altCor*sinAx1*(sinAx2/cosAx2);
       float ax2c = +model.azmCor*sinAx1                 + model.altCor*cosAx1;
@@ -493,8 +490,8 @@ void GeoAlign::mountToObservedPlace(Coordinate *coord) {
 
     // Tube flex
     float TFh = model.tfCor*(cosLat*sinAx1*(1.0F/cosAx2));
-    float TFd = model.tfCor*(cosLat*cosAx1 - sinLat*cosAx2);
-   
+    float TFd = model.tfCor*(cosLat*cosAx1*sinAx2 - sinLat*cosAx2);
+
     // ------------------------------------------------------------
     // polar misalignment
     float a1 = -model.azmCor*cosAx1*(sinAx2/cosAx2) + model.altCor*sinAx1*(sinAx2/cosAx2);

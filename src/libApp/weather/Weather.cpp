@@ -8,7 +8,7 @@
 extern bool xBusy;
 
 #if WEATHER == BME280 || WEATHER == BME280_0x76 || WEATHER == BME280_SPI
-  #include <Adafruit_BME280.h>          // https://github.com/adafruit/Adafruit_BME280_Library/tree/156a0537d6b21aaab1d1f104a7001a38ca1ffce3
+  #include <Adafruit_BME280.h>          // https://github.com/adafruit/Adafruit_BME280_Library
                                         // and https://github.com/adafruit/Adafruit_Sensor
   #if WEATHER == BME280
     #define BME_ADDRESS 0x77
@@ -126,7 +126,7 @@ float Weather::getTemperature() {
 // set temperature in deg. C
 bool Weather::setTemperature(float t) {
   if (weatherSensor == WS_NONE) { 
-    if (t >= -100.0 && t < 100.0) temperature = t; else return false;
+    if (t >= -100.0 && t < 100.0) { temperature = t; averageTemperature = t; } else return false;
   }
   return true;
 }

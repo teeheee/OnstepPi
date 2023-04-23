@@ -10,6 +10,7 @@
 #include "../../Telescope.h"
 #include "../park/Park.h"
 #include "../home/Home.h"
+#include "../limits/Limits.h"
 #include "../Mount.h"
 
 // fractional second sidereal clock (fracsec or millisecond)
@@ -128,7 +129,7 @@ void Site::init() {
   setSiderealTime(ut1);
 
   VF("MSG: Mount, site start sidereal timer task (rate 10ms priority 0)... ");
-  delay(1000);
+  delay(100);
   // period ms (0=idle), duration ms (0=forever), repeat, priority (highest 0..7 lowest), task_handle
   taskHandle = tasks.add(0, 0, true, 0, clockTickWrapper, "ClkTick");
   if (taskHandle) {
@@ -161,11 +162,14 @@ void Site::updateTLS() {
     tls.set(ut1);
   #endif
 
-  if (initError.tls && dateIsReady && timeIsReady) {
-    initError.tls = false;
-    #if GOTO_FEATURE == ON
-      if (park.state == PS_PARKED) park.restore(false);
-    #endif
+  if (dateIsReady && timeIsReady) {
+    if (initError.tls) {
+      initError.tls = false;
+
+      #if GOTO_FEATURE == ON
+        if (park.state == PS_PARKED) park.restore(false);
+      #endif
+    }
   }
 }
 
@@ -187,6 +191,10 @@ void Site::setDateTime(JulianDate julianDate) {
 
   if (writeTime) nv.updateBytes(NV_SITE_JD_BASE, &ut1, JulianDateSize);
   if (NV_ENDURANCE < NVE_MID) writeTime = false;
+
+  #if LIMIT_STRICT == ON
+    limits.enabled(dateIsReady && timeIsReady);
+  #endif
 }
 
 // gets the time in sidereal hours
@@ -273,7 +281,8 @@ double Site::julianDateToGAST(JulianDate julianDate) {
 // reads the julian date information from NV
 void Site::readJD() {
   if (JulianDateSize < sizeof(ut1)) { nv.initError = true; DL("ERR: Site::readJD(), JulianDateSize error"); }
-  if (!nv.hasValidKey()) {
+
+  if (!nv.hasValidKey() || nv.isNull(NV_SITE_JD_BASE, JulianDateSize)) {
     VLF("MSG: Mount, site writing default date/time to NV");
     ut1.day = 2451544.5;
     ut1.hour = 0.0;

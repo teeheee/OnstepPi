@@ -41,7 +41,7 @@
 #ifndef STATUS_LED_PIN
   #define STATUS_LED_PIN        25               // 25 Default LED Cathode (-)
 #endif
-#define MOUNT_STATUS_LED_PIN    25               // 25 Default LED Cathode (-)
+#define MOUNT_LED_PIN           25               // 25 Default LED Cathode (-)
 #ifndef RETICLE_LED_PIN 
   #define RETICLE_LED_PIN       25               // 25 Default LED Cathode (-)
 #endif
@@ -61,15 +61,16 @@
   #define LIMIT_SENSE_PIN       OFF              // 37
 #endif
 
+#define SHARED_ENABLE_PIN       GPIO_PIN(13)     // Hint that the enable pins are shared
+
 // Axis1 RA/Azm step/dir driver
-#define AXIS1_ENABLE_PIN        GPIO_PIN(13)     // [must be low at boot 12]
+#define AXIS1_ENABLE_PIN        SHARED           // [must be low at boot 12]
 #define AXIS1_M0_PIN            23               // 13 SPI MOSI
 #define AXIS1_M1_PIN            18               // 14 SPI SCK
 #define AXIS1_M2_PIN            25               // 23 SPI CS (UART TX)
 #define AXIS1_M3_PIN            19               // 4 SPI MISO (UART RX)
 #define AXIS1_STEP_PIN          2                // 18
 #define AXIS1_DIR_PIN           GPIO_PIN(15)     // [must be high at boot 0]
-#define AXIS1_DECAY_PIN         OFF              // 23
 #define AXIS1_SENSE_HOME_PIN    GPIO_PIN(1)      // 21
 
 // Axis2 Dec/Alt step/dir driver
@@ -80,7 +81,6 @@
 #define AXIS2_M3_PIN            19               // 4 SPI MISO (UART RX)
 #define AXIS2_STEP_PIN          12               // 27
 #define AXIS2_DIR_PIN           GPIO_PIN(16)     // 26
-#define AXIS2_DECAY_PIN         OFF              // 5
 #define AXIS2_SENSE_HOME_PIN    GPIO_PIN(0)      // 22
 
 // For rotator stepper driver

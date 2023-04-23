@@ -30,7 +30,9 @@
     #define I2C_SDA_PIN         21
     #define I2C_SCL_PIN         22
   #else
-    #define SERIAL_TMC_RX       0                // Recieving data (GPIO0 unused except for flashing)
+    #ifndef SERIAL_TMC_RX
+      #define SERIAL_TMC_RX     0                // Recieving data (GPIO0 unused except for flashing)
+    #endif
     #define SERIAL_TMC_TX       15               // Transmit data (Z-MIN)
     #define SPARE_RX_PIN        OFF              // Not supported in this case
   #endif
@@ -75,7 +77,7 @@
 #ifndef STATUS_LED_PIN
   #define STATUS_LED_PIN        AUX8_PIN         // Default LED Cathode (-)
 #endif
-#define MOUNT_STATUS_LED_PIN    STATUS_LED_PIN   // Default LED Cathode (-)
+#define MOUNT_LED_PIN           STATUS_LED_PIN   // Default LED Cathode (-)
 #ifndef RETICLE_LED_PIN 
   #define RETICLE_LED_PIN       STATUS_LED_PIN   // Default LED Cathode (-)
 #endif
@@ -95,15 +97,16 @@
   #define LIMIT_SENSE_PIN       39               // [input only 39] (TB)
 #endif
 
+#define SHARED_ENABLE_PIN       25               // Hint that the enable pins are shared
+
 // Axis1 RA/Azm step/dir driver (X-AXIS)
-#define AXIS1_ENABLE_PIN        25               // 
+#define AXIS1_ENABLE_PIN        SHARED
 #define AXIS1_M0_PIN            OFF              // SPI MOSI
 #define AXIS1_M1_PIN            OFF              // SPI SCK
 #define AXIS1_M2_PIN            OFF              // SPI CS (UART TX)
 #define AXIS1_M3_PIN            OFF              // SPI MISO (UART RX)
 #define AXIS1_STEP_PIN          27
 #define AXIS1_DIR_PIN           26
-#define AXIS1_DECAY_PIN         OFF
 #ifndef AXIS1_SENSE_HOME_PIN
   #define AXIS1_SENSE_HOME_PIN  AUX3_PIN
 #endif
@@ -116,7 +119,6 @@
 #define AXIS2_M3_PIN            OFF              // SPI MISO (UART RX)
 #define AXIS2_STEP_PIN          33
 #define AXIS2_DIR_PIN           32
-#define AXIS2_DECAY_PIN         OFF
 #ifndef AXIS2_SENSE_HOME_PIN
   #define AXIS2_SENSE_HOME_PIN  AUX4_PIN
 #endif

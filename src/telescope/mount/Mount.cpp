@@ -47,6 +47,13 @@ void Mount::init() {
   axis2.setBacklash(settings.backlash.axis2);
   axis2.setMotionLimitsCheck(false);
   if (AXIS2_POWER_DOWN == ON) axis2.setPowerDownTime(AXIS2_POWER_DOWN_TIME);
+}
+
+void Mount::begin() {
+  axis1.calibrate();
+  axis1.enable(MOUNT_ENABLE_AT_STARTUP == ON);
+  axis2.calibrate();
+  axis2.enable(MOUNT_ENABLE_AT_STARTUP == ON);
 
   // initialize the critical subsystems
   site.init();
@@ -78,11 +85,9 @@ void Mount::init() {
     limits.settings.pastMeridianW = Deg360;
   }
 
-  #if GOTO_FEATURE == ON
-    goTo.init();
-    library.init();
-    park.init();
-  #endif
+  goTo.init();
+  library.init();
+  park.init();
 
   #if AXIS1_PEC == ON
     pec.init();
@@ -94,14 +99,21 @@ void Mount::init() {
 
   #if TRACK_AUTOSTART == ON
     if (park.state == PS_PARKED) {
-      VLF("MSG: Mount, parked autostart tracking ignored");
+      #if GOTO_FEATURE == ON
+        if (site.isDateTimeReady()) {
+          VLF("MSG: Mount, autostart tracking from park");
+          park.restore(true);
+        } else {
+          VLF("MSG: Mount, autostart tracking from park requires date/time");
+        }
+      #endif
     } else {
-      VLF("MSG: Mount, set tracking sidereal");
-      tracking(true);
-      trackingRate = hzToSidereal(SIDEREAL_RATE_HZ);
-      if (!site.isDateTimeReady()) {
-        VLF("MSG: Mount, set date/time is unknown so limits are disabled");
-        limits.enabled(false);
+      if (transform.mountType != ALTAZM || site.isDateTimeReady()) {
+        VLF("MSG: Mount, autostart tracking sidereal");
+        tracking(true);
+        trackingRate = hzToSidereal(SIDEREAL_RATE_HZ);
+      } else {
+        VLF("MSG: Mount, can't autostart ALTAZM tracking without date/time");
       }
     }
   #else
@@ -133,8 +145,7 @@ Coordinate Mount::getMountPosition(CoordReturn coordReturn) {
 void Mount::tracking(bool state) {
   if (state == true) {
     enable(state);
-    trackingState = TS_SIDEREAL;
-    atHome = false;
+    if (isEnabled()) trackingState = TS_SIDEREAL;
   } else
 
   if (state == false) {
@@ -150,11 +161,14 @@ void Mount::enable(bool state) {
   static bool firstEnable = true;
 
   if (state == true) {
-    if (firstEnable) mountStatus.ready();
-    firstEnable = false;
-  } else
+    #if LIMIT_STRICT == ON
+      if (!site.dateIsReady || !site.timeIsReady) return;
+    #endif
 
-  if (state == false) {
+    if (firstEnable) { mountStatus.ready(); }
+
+    firstEnable = false;
+  } else {
     trackingState = TS_NONE;
     update();
   }
@@ -174,11 +188,11 @@ void Mount::update() {
   static int lastStatusFlashMs = 0;
   int statusFlashMs = 0;
 
-#if GOTO_FEATURE == ON
+  #if GOTO_FEATURE == ON
   if (goTo.state == GS_NONE && guide.state < GU_GUIDE) {
-#else
+  #else
   if (guide.state < GU_GUIDE) {
-#endif
+  #endif
     if (trackingState != TS_SIDEREAL) {
       trackingRateAxis1 = 0.0F;
       trackingRateAxis2 = 0.0F;
@@ -204,6 +218,7 @@ void Mount::update() {
     statusFlashMs = SF_SLEWING;
     axis2.setFrequencyBase(0.0F);
   }
+
   if (statusFlashMs != lastStatusFlashMs) {
     lastStatusFlashMs = statusFlashMs;
     mountStatus.flashRate(statusFlashMs);
@@ -212,7 +227,6 @@ void Mount::update() {
 }
 
 void Mount::poll() {
-
   #ifdef HAL_NO_DOUBLE_PRECISION
     #define DiffRange  0.0087266463F         // 30 arc-minutes in radians
     #define DiffRange2 0.017453292F          // 60 arc-minutes in radians
@@ -228,7 +242,7 @@ void Mount::poll() {
     return;
   }
 
-  if (transform.mountType != ALTAZM && settings.rc == RC_NONE) {
+  if (transform.mountType != ALTAZM && settings.rc == RC_NONE && trackingRateOffsetRA == 0.0F && trackingRateOffsetDec == 0.0F) {
     trackingRateAxis1 = trackingRate;
     trackingRateAxis2 = 0.0F;
     update();
@@ -269,9 +283,22 @@ void Mount::poll() {
     transform.topocentricToObservedPlace(&behind); Y;
   }
 
+  // drop the dual axis if not enabled
+  if (settings.rc != RC_REFRACTION_DUAL && settings.rc != RC_MODEL_DUAL) { behind.d = ahead.d; }
+
+  // apply tracking rate offset to equatorial coordinates
+  float timeInSeconds = radToHrs(DiffRange)*3600.0F;
+  float trackingRateOffsetRadsRA = siderealToRad(trackingRateOffsetRA)*timeInSeconds;
+  float trackingRateOffsetRadsDec = siderealToRad(trackingRateOffsetDec)*timeInSeconds;
+  ahead.h -= trackingRateOffsetRadsRA;
+  behind.h += trackingRateOffsetRadsRA;
+  ahead.d += trackingRateOffsetRadsDec;
+  behind.d -= trackingRateOffsetRadsDec;
+
   // transfer to variables named appropriately for mount coordinates
   float aheadAxis1, aheadAxis2, behindAxis1, behindAxis2;
   if (transform.mountType == ALTAZM) {
+    transform.equToHor(&ahead);
     aheadAxis1 = ahead.z;
     aheadAxis2 = ahead.a;
     behindAxis1 = behind.z;
@@ -287,16 +314,12 @@ void Mount::poll() {
   if (aheadAxis1 < -Deg90 && behindAxis1 > Deg90) aheadAxis1 += Deg360;
   if (behindAxis1 < -Deg90 && aheadAxis1 > Deg90) behindAxis1 += Deg360;
   float rate1 = (aheadAxis1 - behindAxis1)/DiffRange2;
-  if (fabs(trackingRateAxis1 - rate1) <= 0.005F)
-    trackingRateAxis1 = (trackingRateAxis1*9.0F + rate1)/10.0F; else trackingRateAxis1 = rate1;
+  if (fabs(trackingRateAxis1 - rate1) <= 0.005F) trackingRateAxis1 = (trackingRateAxis1*9.0F + rate1)/10.0F; else trackingRateAxis1 = rate1;
 
-  // calculate the Axis2 Dec/Alt tracking rate (if dual axis or ALTAZM mode)
-  if (settings.rc == RC_REFRACTION_DUAL || settings.rc == RC_MODEL_DUAL || transform.mountType == ALTAZM) {
-    float rate2;
-    rate2 = (aheadAxis2 - behindAxis2)/DiffRange2;
-    if (current.pierSide == PIER_SIDE_WEST) rate2 = -rate2;
-    if (fabs(trackingRateAxis2 - rate2) <= 0.005F) trackingRateAxis2 = (trackingRateAxis2*9.0F + rate2)/10.0F; else trackingRateAxis2 = rate2;
-  } else trackingRateAxis2 = 0.0F;
+  // calculate the Axis2 Dec/Alt tracking rate
+  float rate2 = (aheadAxis2 - behindAxis2)/DiffRange2;
+  if (current.pierSide == PIER_SIDE_WEST) rate2 = -rate2;
+  if (fabs(trackingRateAxis2 - rate2) <= 0.005F) trackingRateAxis2 = (trackingRateAxis2*9.0F + rate2)/10.0F; else trackingRateAxis2 = rate2;
 
   // override for special case of near a celestial pole
   if (fabs(declination) > Deg85) {
@@ -340,7 +363,7 @@ void Mount::updatePosition(CoordReturn coordReturn) {
     if (coordReturn == CR_MOUNT_ALT) transform.equToAlt(&current); else
     if (coordReturn == CR_MOUNT_HOR || coordReturn == CR_MOUNT_ALL) transform.equToHor(&current);
   }
-  if (atHome) current.pierSide = PIER_SIDE_NONE;
+  if (isHome()) current.pierSide = PIER_SIDE_NONE;
 }
 
 Mount mount;

@@ -113,6 +113,9 @@ class Motor {
     // set slewing state (hint that we are about to slew or are done slewing)
     virtual void setSlewing(bool state);
 
+    // calibrate the motor if required
+    virtual void calibrate() {}
+
     // monitor and respond to motor state as required
     virtual void poll() {}
 
@@ -120,6 +123,8 @@ class Motor {
     volatile bool inBacklash = false;          // must be true if within the backlash travel
 
     volatile uint8_t monitorHandle = 0;        // handle to the axis task monitor
+
+    bool enabled = false;                      // enable/disable logical state
 
   protected:
     // disable backlash compensation, to work properly there must be an enable call to match
@@ -131,7 +136,6 @@ class Motor {
     volatile uint8_t axisNumber = 0;           // axis number for this motor (1 to 9 in OnStepX)
     char axisPrefix[16];                       // prefix for debug messages
 
-    bool enabled = false;                      // enable/disable logical state (disabled is powered down)
     bool synchronized = true;                  // locks movement of axis target with timer rate
     bool limitsCheck = true;                   // enable/disable numeric range limits (doesn't apply to limit switches)
 
@@ -149,12 +153,9 @@ class Motor {
     volatile long targetSteps = 0;             // where we want the motor
     volatile long motorSteps = 0;              // where the motor is not counting backlash
     volatile long indexSteps = 0;              // for absolute motor position to axis position
-    volatile int  step = 1;                    // step size, and for direction control
+    volatile long step = 1;                    // step size, and for direction control
 
     float default_param1 = 0, default_param2 = 0, default_param3 = 0, default_param4 = 0, default_param5 = 0, default_param6 = 0;
-
-    bool poweredDown = false;
-
 };
 
 #endif

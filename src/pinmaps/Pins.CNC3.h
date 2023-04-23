@@ -49,7 +49,7 @@
 #ifndef STATUS_LED_PIN
   #define STATUS_LED_PIN        AUX8_PIN         // Default LED Cathode (-)
 #endif
-#define MOUNT_STATUS_LED_PIN    STATUS_LED_PIN   // Default LED Cathode (-)
+#define MOUNT_LED_PIN           STATUS_LED_PIN   // Default LED Cathode (-)
 #define RETICLE_LED_PIN         STATUS_LED_PIN   // Default LED Cathode (-)
 
 // For a piezo buzzer
@@ -67,15 +67,17 @@
   #define LIMIT_SENSE_PIN       AUX7_PIN
 #endif
 
+#define SHARED_DIRECTION_PINS                    // Hint that the direction pins are shared
+#define SHARED_ENABLE_PIN       12               // Hint that the enable pins are shared
+
 // Axis1 RA/Azm step/dir driver
-#define AXIS1_ENABLE_PIN        12               // [must be low at boot 12]
+#define AXIS1_ENABLE_PIN        SHARED           // [must be low at boot 12]
 #define AXIS1_M0_PIN            32               // SPI MOSI
 #define AXIS1_M1_PIN            33               // SPI SCK
 #define AXIS1_M2_PIN            15               // SPI CS (UART TX)
 #define AXIS1_M3_PIN            AUX2_PIN         // SPI MISO (UART RX)
 #define AXIS1_STEP_PIN          26
 #define AXIS1_DIR_PIN           16
-#define AXIS1_DECAY_PIN         AXIS1_M2_PIN
 #ifndef AXIS1_SENSE_HOME_PIN
   #define AXIS1_SENSE_HOME_PIN  AUX3_PIN
 #endif
@@ -88,7 +90,6 @@
 #define AXIS2_M3_PIN            AUX2_PIN         // SPI MISO (UART RX)
 #define AXIS2_STEP_PIN          25
 #define AXIS2_DIR_PIN           27
-#define AXIS2_DECAY_PIN         AXIS2_M2_PIN
 #ifndef AXIS2_SENSE_HOME_PIN
   #define AXIS2_SENSE_HOME_PIN  AUX4_PIN
 #endif

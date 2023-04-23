@@ -4,17 +4,18 @@
 // We define a more generic symbol, in case more STM32 boards based on different lines are supported
 #define __ARM_STM32__
 
-#define HAL_FAST_PROCESSOR
-
 // 1/200 second sidereal timer
 #define HAL_FRACTIONAL_SEC 200.0F
 
-// This platform has 16 bit PWM
-#ifndef ANALOG_WRITE_PWM_BITS
-  #define ANALOG_WRITE_PWM_BITS 8
+// Analog read and write
+#ifndef ANALOG_READ_RANGE
+  #define ANALOG_READ_RANGE 1023
 #endif
-#ifndef ANALOG_WRITE_PWM_RANGE
-  #define ANALOG_WRITE_PWM_RANGE 255
+#ifndef ANALOG_WRITE_RANGE
+  #define ANALOG_WRITE_RANGE 255
+#endif
+#ifndef ANALOG_WRITE_PWM_BITS
+  #define ANALOG_WRITE_PWM_BITS 8 // up to 16 bits
 #endif
 
 // Lower limit (fastest) step rate in uS for this platform (in SQW mode) and width of step pulse

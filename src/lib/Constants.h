@@ -24,6 +24,7 @@
 #define STANDARD                    -19
 #define PERSISTENT                  -20
 #define ERRORS_ONLY                 -21
+#define KALMAN                      -22
 #define INVALID                     -127
 
 // driver (step/dir interface, usually for stepper motors)
@@ -38,17 +39,19 @@
 #define TMC2100                     7      // allows M0,M1    bit patterens for 1x,2x,4x,16x   (spreadCycle only, no 256x intpol)
 #define TMC2130S                    8      // allows M0,M1    bit patterens for 1x,2x,4x,16x   (spreadCycle only, no 256x intpol)
 #define TMC2208S                    9      // allows M0,M1    bit patterens for 2x,4x,8x,16x   (stealthChop default, uses 256x intpol)
-#define TMC2209S                    10     // allows M0,M1    bit patterens for 8x,16x,32x,64x (M2 sets spreadCycle/stealthChop, uses 256x intpol)
-#define TMC2226S                    10     // allows M0,M1    bit patterens for 8x,16x,32x,64x (M2 sets spreadCycle/stealthChop, uses 256x intpol)
-#define TMC_DRIVER_FIRST            11
-#define TMC2130                     11     // uses TMC software SPI comms   for 1x,2x...,256x  (SPI sets spreadCycle/stealthChop etc.)
-#define TMC5160                     12     // uses TMC software SPI comms   for 1x,2x...,256x  (SPI sets spreadCycle/stealthChop etc.)
-#define TMC5161                     13     // uses TMC software SPI comms   for 1x,2x...,256x  (SPI sets spreadCycle/stealthChop etc.)
-#define TMC_UART_DRIVER_FIRST       14
-#define TMC2208                     14     // uses TMC software UART comms  for 1x,2x...,256x  (UART sets spreadCycle/stealthChop etc, dedicated RX/TX UART to each driver using index 0)
-#define TMC2209                     15     // uses TMC software UART comms  for 1x,2x...,256x  (UART sets spreadCycle/stealthChop etc, dedicated RX/TX UART to each driver using index 0)
-#define TMC2226                     15     // uses TMC software UART comms  for 1x,2x...,256x  (UART sets spreadCycle/stealthChop etc, dedicated RX/TX UART to each driver using index 0)
-#define STEP_DIR_DRIVER_LAST        15
+#define TMC2225S                    10     // allows M0,M1    bit patterens for 4x,8x,16x,32x  (M2 sets spreadCycle/stealthChop, uses 256x intpol)
+#define TMC2209S                    11     // allows M0,M1    bit patterens for 8x,16x,32x,64x (M2 sets spreadCycle/stealthChop, uses 256x intpol)
+#define TMC2226S                    11     // allows M0,M1    bit patterens for 8x,16x,32x,64x (M2 sets spreadCycle/stealthChop, uses 256x intpol)
+#define TMC_DRIVER_FIRST            12
+#define TMC2130                     12     // uses TMC software SPI comms   for 1x,2x...,256x  (SPI sets spreadCycle/stealthChop etc.)
+#define TMC5160                     13     // uses TMC software SPI comms   for 1x,2x...,256x  (SPI sets spreadCycle/stealthChop etc.)
+#define TMC5161                     14     // uses TMC software SPI comms   for 1x,2x...,256x  (SPI sets spreadCycle/stealthChop etc.)
+#define TMC_UART_DRIVER_FIRST       15
+#define TMC2208                     15     // uses TMC software UART comms  for 1x,2x...,256x  (UART sets spreadCycle/stealthChop etc, dedicated RX/TX UART to each driver using index 0)
+#define TMC2225                     15     // uses TMC software UART comms  for 1x,2x...,256x  (UART sets spreadCycle/stealthChop etc, dedicated RX/TX UART to each driver using index 0)
+#define TMC2209                     16     // uses TMC software UART comms  for 1x,2x...,256x  (UART sets spreadCycle/stealthChop etc, dedicated RX/TX UART to each driver using index 0)
+#define TMC2226                     16     // uses TMC software UART comms  for 1x,2x...,256x  (UART sets spreadCycle/stealthChop etc, dedicated RX/TX UART to each driver using index 0)
+#define STEP_DIR_DRIVER_LAST        16
 
 // driver (step/dir) decay mode
 #define DRIVER_DECAY_MODE_FIRST     1
@@ -74,12 +77,13 @@
 // servo encoder (must match Encoder library)
 #define ENC_FIRST                   1
 #define AB                          1      // AB quadrature encoder
-#define CW_CCW                      2      // clockwise/counter-clockwise encoder
-#define PULSE_DIR                   3      // pulse/direction encoder
-#define PULSE_ONLY                  4      // pulse only encoder
-#define AS37_H39B_B                 5      // Broadcom AS37-H39B-B BISS-C interface encoder
-#define SERIAL_BRIDGE               6      // serial bridge to encoders
-#define ENC_LAST                    6
+#define AB_ESP32                    2      // AB quadrature encoder (using fast ESP32 hardware decode)
+#define CW_CCW                      3      // clockwise/counter-clockwise encoder
+#define PULSE_DIR                   4      // pulse/direction encoder
+#define PULSE_ONLY                  5      // pulse only encoder
+#define AS37_H39B_B                 6      // Broadcom AS37-H39B-B BISS-C interface encoder
+#define SERIAL_BRIDGE               7      // serial bridge to encoders
+#define ENC_LAST                    7
 
 // servo feedback (must match Encoder library)
 #define SERVO_FEEDBACK_FIRST        1

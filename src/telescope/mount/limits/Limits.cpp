@@ -11,6 +11,7 @@
 #include "../Mount.h"
 #include "../goto/Goto.h"
 #include "../guide/Guide.h"
+#include "../site/Site.h"
 
 inline void limitsWrapper() { limits.poll(); }
 
@@ -19,7 +20,7 @@ void Limits::init() {
   if (LimitSettingsSize < sizeof(LimitSettings)) { nv.initError = true; DL("ERR: Limits::init(), LimitSettingsSize error"); }
 
   // write the default settings to NV
-  if (!nv.hasValidKey()) {
+  if (!nv.hasValidKey() || nv.isNull(NV_MOUNT_LIMITS_BASE, sizeof(LimitSettings))) {
     VLF("MSG: Mount, limits writing defaults to NV");
     nv.writeBytes(NV_MOUNT_LIMITS_BASE, &settings, sizeof(LimitSettings));
   }
@@ -55,7 +56,7 @@ void Limits::constrainMeridianLimits() {
 }
 
 // target coordinate check ahead of sync, goto, etc.
-CommandError Limits::validateCoords(Coordinate *coords) {
+CommandError Limits::validateTarget(Coordinate *coords) {
   if (flt(coords->a, settings.altitude.min)) return CE_SLEW_ERR_BELOW_HORIZON;
   if (fgt(coords->a, settings.altitude.max)) return CE_SLEW_ERR_ABOVE_OVERHEAD;
   if (transform.mountType == ALTAZM) {
@@ -89,7 +90,7 @@ CommandError Limits::validateCoords(Coordinate *coords) {
   return CE_NONE;
 }
 
-// true if an limit related error is exists
+// true if an error exists
 bool Limits::isError() {
   return initError.nv ||
          initError.value ||
@@ -106,6 +107,18 @@ bool Limits::isError() {
          error.limitSense.axis2.max ||
          error.meridian.east ||
          error.meridian.west;
+}
+
+// true if an error exists that impacts goto safety
+bool Limits::isGotoError() {
+  return initError.nv ||
+         initError.value ||
+         !site.dateIsReady ||
+         !site.timeIsReady ||
+         error.limitSense.axis1.min ||
+         error.limitSense.axis1.max ||
+         error.limitSense.axis2.min ||
+         error.limitSense.axis2.max;
 }
 
 // return general error code
@@ -174,26 +187,23 @@ void Limits::poll() {
     if (current.a < settings.altitude.min) error.altitude.min = true; else error.altitude.min = false;
     if (current.a > settings.altitude.max) error.altitude.max = true; else error.altitude.max = false;
 
-    // flag if near the NCP or SCP
-    bool nearPole = site.location.latitude >= 0.0 ? abs(current.d - HALF_PI) < SmallestFloat : abs(current.d + HALF_PI) < SmallestFloat;
-
     // meridian limits
     if (transform.meridianFlips && current.pierSide == PIER_SIDE_EAST) {
-      if (!nearPole && current.h < -settings.pastMeridianE) {
+      if (current.h < -settings.pastMeridianE) {
         stopAxis1(GA_REVERSE);
         error.meridian.east = true;
       } else error.meridian.east = false;
     } else error.meridian.east = false;
 
     if (transform.meridianFlips && current.pierSide == PIER_SIDE_WEST) {
-      if (!nearPole && current.h > settings.pastMeridianW && autoFlipDelayCycles == 0) {
+      if (current.h > settings.pastMeridianW && autoFlipDelayCycles == 0) {
         #if GOTO_FEATURE == ON && AXIS2_TANGENT_ARM == OFF
           if (goTo.isAutoFlipEnabled() && mount.isTracking()) {
             // disable this limit for a second to allow goto to exit the out of limits region
             autoFlipDelayCycles = 10;
             VLF("MSG: Mount, start automatic meridian flip");
             Coordinate target = mount.getMountPosition();
-            CommandError e = goTo.request(&target, PSS_EAST_ONLY, false);
+            CommandError e = goTo.request(target, PSS_EAST_ONLY, false);
             if (e != CE_NONE) {
               stopAxis1(GA_FORWARD);
               error.meridian.west = true;
@@ -235,7 +245,7 @@ void Limits::poll() {
           autoFlipDelayCycles = 10;
           VLF("MSG: Mount, start automatic meridian flip");
           Coordinate target = mount.getMountPosition();
-          CommandError e = goTo.request(&target, PSS_WEST_ONLY, false);
+          CommandError e = goTo.request(target, PSS_WEST_ONLY, false);
           if (e != CE_NONE) {
             stopAxis1(GA_FORWARD);
             error.limit.axis1.max = true;
@@ -340,6 +350,14 @@ void Limits::poll() {
     if (!lastError.altitude.min && error.altitude.min) stop();
     if (!lastError.altitude.max && error.altitude.max) stop();
   }
+
+  // if first time breaking a meridian or min/max limit stop all guides
+  if ((!lastError.meridian.east && error.meridian.east) ||
+      (!lastError.meridian.west && error.meridian.west) ||
+      (!lastError.limit.axis1.min && error.limit.axis1.min) ||
+      (!lastError.limit.axis1.max && error.limit.axis1.max) ||
+      (!lastError.limit.axis2.min && error.limit.axis2.min) ||
+      (!lastError.limit.axis2.max && error.limit.axis2.max)) stop();
 }
 
 Limits limits;

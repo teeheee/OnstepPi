@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------------
-// GEOMETRIC ALIGN FOR ALT/AZM AND EQ MOUNTS
+// GOTO ASSIST GEOMETRIC ALIGN FOR ALT/AZM AND EQ MOUNTS (HIGH SPEED)
 //
 // by Howard Dutton
 //
@@ -9,7 +9,7 @@
 
 #include "../../../Common.h"
 
-#ifdef MOUNT_PRESENT
+#if defined(MOUNT_PRESENT) && defined(HIGH_SPEED_ALIGN)
 
 #include "../../../libApp/commands/ProcessCmds.h"
 
@@ -47,7 +47,7 @@ typedef struct Coordinate {
 typedef struct AlignCoordinate {
   float ax1, ma1;
   float ax2, ma2;
-  float cosA1, sinA1, cosA2, tanA2;
+  float cosA1, sinA1, cosA2, sinA2, tanA2;
   float h;
   float d;
   int side;
@@ -105,7 +105,7 @@ class GeoAlign
     void correct(AlignCoordinate &mount, float sf, float _deo, float _pd, float _pz, float _pe, float _da, float _ff, float _tf, float *h1, float *d1);
     void doSearch(float sf, int p1, int p2, int p3, int p4, int p5, int p6, int p7, int p8, int p9);
 
-    bool modelIsReady;
+    bool modelIsReady = false;
     int8_t mountType;
     float cosLat, sinLat;
 

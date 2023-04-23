@@ -24,7 +24,7 @@ void Rotator::init() {
   // get settings stored in NV ready
   if (!nv.hasValidKey()) {
     VLF("MSG: Rotator, writing defaults to NV");
-    writeSettings();
+    nv.updateBytes(NV_ROTATOR_SETTINGS_BASE + RotatorSettingsSize, &settings, sizeof(RotatorSettings));
   }
   readSettings();
 
@@ -32,12 +32,16 @@ void Rotator::init() {
   if (!axis3.init(&motor3)) { initError.driver = true; DLF("ERR: Axis3, no motion controller!"); }
   axis3.resetPositionSteps(0);
   axis3.setBacklashSteps(settings.backlash);
-  axis3.setFrequencyMax(AXIS3_SLEW_RATE_DESIRED);
+  axis3.setFrequencyMax(AXIS3_SLEW_RATE_BASE_DESIRED);
   axis3.setFrequencyMin(0.01F);
-  axis3.setFrequencySlew(AXIS3_SLEW_RATE_DESIRED);
+  axis3.setFrequencySlew(AXIS3_SLEW_RATE_BASE_DESIRED);
   axis3.setSlewAccelerationTime(AXIS3_ACCELERATION_TIME);
   axis3.setSlewAccelerationTimeAbort(AXIS3_RAPID_STOP_TIME);
   if (AXIS3_POWER_DOWN == ON) axis3.setPowerDownTime(AXIS3_POWER_DOWN_TIME);
+}
+
+void Rotator::begin() {
+  axis3.calibrate();
 
   // start monitor task
   VF("MSG: Rotator, start derotation task (rate 1s priority 6)... ");
@@ -84,13 +88,45 @@ CommandError Rotator::setBacklash(int value) {
   }
 #endif
 
+// set move rate, 1 for 1um/sec slew, 2 for 10um/sec, 3 for 100um/sec, 4 for 0.5x goto rate
+void Rotator::setMoveRate(int value) {
+  switch (value) {
+    case 1: moveRate = 0.01F; break;
+    case 2: moveRate = 0.1F; break;
+    case 3: moveRate = 1.0F; break;
+    case 4: moveRate = settings.gotoRate/2.0F; break;
+    default: moveRate = 0.1F; break;
+  }
+}
+
 // start slew in the specified direction
-CommandError Rotator::slew(Direction dir) {
+CommandError Rotator::move(Direction dir) {
   if (settings.parkState >= PS_PARKED) return CE_PARKED;
 
   axis3.setFrequencyBase(0.0F);
 
-  return axis3.autoSlew(dir, slewRate);
+  return axis3.autoSlew(dir, moveRate);
+}
+
+// get goto rate, 1 for 0.5x base, 2 for 0.75x base, 3 for base, 4 for 1.5x base, 5 for 2x base
+int Rotator::getGotoRate() {
+  if (settings.gotoRate < AXIS3_SLEW_RATE_BASE_DESIRED/1.75) return 1;
+  if (settings.gotoRate < AXIS3_SLEW_RATE_BASE_DESIRED/1.25) return 2;
+  if (settings.gotoRate < AXIS3_SLEW_RATE_BASE_DESIRED*1.25) return 3;
+  if (settings.gotoRate < AXIS3_SLEW_RATE_BASE_DESIRED*1.75) return 4; else return 5;
+}
+
+// set goto rate, 1 for 0.5x base, 2 for 0.66x base, 3 for base, 4 for 1.5x base, 5 for 2x base
+void Rotator::setGotoRate(int value) {
+  switch (value) {
+    case 1: settings.gotoRate = AXIS3_SLEW_RATE_BASE_DESIRED/2.0; break;
+    case 2: settings.gotoRate = AXIS3_SLEW_RATE_BASE_DESIRED/1.5; break;
+    case 3: settings.gotoRate = AXIS3_SLEW_RATE_BASE_DESIRED*1.0; break;
+    case 4: settings.gotoRate = AXIS3_SLEW_RATE_BASE_DESIRED*1.5; break;
+    case 5: settings.gotoRate = AXIS3_SLEW_RATE_BASE_DESIRED*2.0; break;
+    default: settings.gotoRate = AXIS3_SLEW_RATE_BASE_DESIRED; break;
+  }
+  writeSettings();
 }
 
 // move rotator to a specific location
@@ -103,7 +139,7 @@ CommandError Rotator::gotoTarget(float target) {
   axis3.setFrequencyBase(0.0F);
   axis3.setTargetCoordinate(target);
 
-  return axis3.autoGoto(AXIS3_SLEW_RATE_DESIRED*AXIS3_ACCELERATION_TIME, AXIS3_SLEW_RATE_DESIRED);
+  return axis3.autoGoto(AXIS3_SLEW_RATE_BASE_DESIRED);
 }
 
 // parks rotator at current position
@@ -120,7 +156,7 @@ CommandError Rotator::park() {
   settings.position = axis3.getInstrumentCoordinate();
   axis3.setTargetCoordinatePark(settings.position);
 
-  CommandError e = axis3.autoGoto(AXIS3_SLEW_RATE_DESIRED*AXIS3_ACCELERATION_TIME, AXIS3_SLEW_RATE_DESIRED);
+  CommandError e = axis3.autoGoto(AXIS3_SLEW_RATE_BASE_DESIRED);
 
   if (e == CE_NONE) {
     settings.parkState = PS_PARKING;
@@ -157,7 +193,7 @@ CommandError Rotator::unpark() {
   axis3.setBacklash(settings.backlash);
   axis3.setTargetCoordinate(settings.position);
 
-  CommandError e = axis3.autoGoto(AXIS3_SLEW_RATE_DESIRED*AXIS3_ACCELERATION_TIME, AXIS3_SLEW_RATE_DESIRED);
+  CommandError e = axis3.autoGoto(AXIS3_SLEW_RATE_BASE_DESIRED);
 
   if (e == CE_NONE) {
     settings.parkState = PS_UNPARKING;

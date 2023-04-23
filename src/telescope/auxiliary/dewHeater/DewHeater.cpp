@@ -16,13 +16,13 @@ void DewHeater::init(int index) {
   }
 
   zero = nv.readUC(NV_FEATURE_SETTINGS_BASE + index*3)/10.0 - 5.0;
-  if (zero < -5.0) { zero = -5.0; DLF("ERR: DewHeater::init(), NV zero too low (set to -5.0)"); }
-  if (zero > 20) { zero = 20.0; DLF("ERR: DewHeater::init(), NV zero too high (set to 20.0)"); }
+  if (zero < -5.0) { zero = -5.0; DLF("WRN: DewHeater::init(), NV zero too low (set to -5.0)"); }
+  if (zero > 20) { zero = 20.0; DLF("WRN: DewHeater::init(), NV zero too high (set to 20.0)"); }
 
   span = nv.readUC(NV_FEATURE_SETTINGS_BASE + index*3 + 1)/10.0 - 5.0;
-  if (zero == -5.0 && span == -5.0) span = -4.9; // init. state is ok, no error or warning
-  if (span < -5.0) { span = -5.0; DLF("ERR: DewHeater::init(), NV span too low (set to -5.0)"); }
-  if (span > 20) { span = 20.0; DLF("ERR: DewHeater::init(), NV span too high (set to 20.0)"); }
+  if (zero == -5.0 && span == -5.0) span = 20.0; // init. state is ok, no error or warning
+  if (span < -5.0) { span = -5.0; DLF("WRN: DewHeater::init(), NV span too low (set to -5.0)"); }
+  if (span > 20) { span = 20.0; DLF("WRN: DewHeater::init(), NV span too high (set to 20.0)"); }
 
   if (zero >= span) {
     if (span > -5.0) zero = span - 0.1; else span = zero + 0.1;
@@ -39,7 +39,7 @@ void DewHeater::poll(float deltaAboveDewPointC) {
   switchTimeMs = map(lroundf(deltaAboveDewPointC*10.0F), lroundf(zero*10.0F), lroundf(span*10.0F), DEW_HEATER_PULSE_WIDTH_MS, 0);
   switchTimeMs = constrain(switchTimeMs, 0, DEW_HEATER_PULSE_WIDTH_MS);
   #ifdef DEW_HEATER_MAX_POWER
-    switchTimeMs = lroundf(switchTimeMs*(DEW_HEATER_MAX_POWER/100.0))
+    switchTimeMs = lroundf(switchTimeMs*(DEW_HEATER_MAX_POWER/100.0));
   #endif
 
   currentTime = millis();

@@ -7,15 +7,18 @@
 // This platform has digitalReadFast, digitalWriteFast, etc.
 #define HAL_HAS_DIGITAL_FAST
 
-// 1/5000 second sidereal timer
-#define HAL_FRACTIONAL_SEC 5000.0F
+// 1/1000 second sidereal timer
+#define HAL_FRACTIONAL_SEC 1000.0F
 
-// This platform has up to 15 bit PWM
-#ifndef ANALOG_WRITE_PWM_BITS
-  #define ANALOG_WRITE_PWM_BITS 13
+// Analog read and write
+#ifndef ANALOG_READ_RANGE
+  #define ANALOG_READ_RANGE 1023
 #endif
-#ifndef ANALOG_WRITE_PWM_RANGE
-  #define ANALOG_WRITE_PWM_RANGE 8191
+#ifndef ANALOG_WRITE_RANGE
+  #define ANALOG_WRITE_RANGE 8191
+#endif
+#ifndef ANALOG_WRITE_PWM_BITS
+  #define ANALOG_WRITE_PWM_BITS 13 // up to 15 bits
 #endif
 #ifndef ANALOG_WRITE_PWM_FREQUENCY
   #define ANALOG_WRITE_PWM_FREQUENCY 18310.55
@@ -61,7 +64,7 @@
 
 //--------------------------------------------------------------------------------------------------
 // Internal MCU temperature (in degrees C)
-#define HAL_TEMP() ( NAN )
+#define HAL_TEMP() ( tempmonGetTemp() )
 
 //---------------------------------------------------------------------------------------------------
 // Misc. includes to support this processor's operation

@@ -52,7 +52,7 @@
 
 // The status LED is a two wire jumper with a 10k resistor in series to limit the current to the LED
 #define STATUS_LED_PIN          AUX0_PIN         // Default LED Cathode (-)
-#define MOUNT_STATUS_LED_PIN    AUX0_PIN         // Default LED Cathode (-)
+#define MOUNT_LED_PIN           AUX0_PIN         // Default LED Cathode (-)
 #ifndef RETICLE_LED_PIN 
   #define RETICLE_LED_PIN       AUX4_PIN         // Default LED Cathode (-)
 #endif
@@ -71,6 +71,9 @@
   #define LIMIT_SENSE_PIN       AUX3_PIN         // The limit switch sense is a logic level input normally pull high (2k resistor,) shorted to ground it stops gotos/tracking
 #endif
 
+// hint that the driver mode pins are dedicated (not shared SPI bus except possibly MISO)
+#define DEDICATED_MODE_PINS
+
 // Axis1 RA/Azm step/dir driver
 #define AXIS1_ENABLE_PIN        14
 #define AXIS1_M0_PIN            15               // SPI MOSI
@@ -79,7 +82,6 @@
 #define AXIS1_M3_PIN            AUX1_PIN         // SPI MISO (UART RX)
 #define AXIS1_STEP_PIN          20
 #define AXIS1_DIR_PIN           21
-#define AXIS1_DECAY_PIN         AXIS1_M2_PIN
 #define AXIS1_FAULT_PIN         AXIS1_M3_PIN     // SPI MISO
 #ifndef AXIS1_SENSE_HOME_PIN
   #define AXIS1_SENSE_HOME_PIN  AUX3_PIN
@@ -101,7 +103,6 @@
 #endif
 #define AXIS2_STEP_PIN          3
 #define AXIS2_DIR_PIN           2
-#define AXIS2_DECAY_PIN         AXIS2_M2_PIN
 #define AXIS2_FAULT_PIN         AXIS2_M3_PIN
 #ifndef AXIS2_SENSE_HOME_PIN
   #define AXIS2_SENSE_HOME_PIN  AUX4_PIN

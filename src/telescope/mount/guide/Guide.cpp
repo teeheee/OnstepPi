@@ -15,6 +15,7 @@
 #include "../park/Park.h"
 #include "../home/Home.h"
 #include "../limits/Limits.h"
+#include "../status/Status.h"
 
 inline void guideWrapper() { guide.poll(); }
 
@@ -44,8 +45,8 @@ void Guide::init() {
 
 // start guide at a given direction and rate on Axis1
 CommandError Guide::startAxis1(GuideAction guideAction, GuideRateSelect rateSelect, unsigned long guideTimeLimit) {
-  if (guideAction == GA_NONE || guideActionAxis1 == guideAction) return CE_NONE;
-  if (guide.state == GU_HOME_GUIDE) return CE_NONE;
+  if (guideAction == GA_NONE) return CE_NONE;
+  if (state == GU_HOME_GUIDE || state == GU_HOME_GUIDE_ABORT) return CE_NONE;
 
   CommandError e = validate(1, guideAction);
   if (e != CE_NONE) return e;
@@ -83,7 +84,7 @@ CommandError Guide::startAxis1(GuideAction guideAction, GuideRateSelect rateSele
 // stop guide on Axis1, use GA_BREAK to stop in either direction or specifiy the direction to be stopped GA_FORWARD or GA_REVERSE
 // set abort true to rapidly stop (broken limit, etc)
 void Guide::stopAxis1(GuideAction stopDirection, bool abort) {
-  if (guide.state == GU_HOME_GUIDE && !abort) { this->abort(); return; }
+  if (state == GU_HOME_GUIDE && !abort) { this->abort(); return; }
 
   if (guideActionAxis1 > GA_BREAK) {
     if (stopDirection != GA_BREAK && guideActionAxis1 != stopDirection && guideActionAxis1 != GA_HOME) return;
@@ -101,8 +102,8 @@ void Guide::stopAxis1(GuideAction stopDirection, bool abort) {
 
 // start guide at a given direction and rate on Axis2
 CommandError Guide::startAxis2(GuideAction guideAction, GuideRateSelect rateSelect, unsigned long guideTimeLimit) {
-  if (guideAction == GA_NONE || guideActionAxis2 == guideAction) return CE_NONE;
-  if (guide.state == GU_HOME_GUIDE) return CE_NONE;
+  if (guideAction == GA_NONE) return CE_NONE;
+  if (state == GU_HOME_GUIDE || state == GU_HOME_GUIDE_ABORT) return CE_NONE;
 
   CommandError e = validate(2, guideAction); // if successful always sets pierSide
   if (e != CE_NONE) return e;
@@ -143,7 +144,7 @@ CommandError Guide::startAxis2(GuideAction guideAction, GuideRateSelect rateSele
 // stop guide on Axis2, use GA_BREAK to stop in either direction or specifiy the direction to be stopped GA_FORWARD or GA_REVERSE
 // set abort true to rapidly stop (broken limit, etc)
 void Guide::stopAxis2(GuideAction stopDirection, bool abort) {
-  if (guide.state == GU_HOME_GUIDE && !abort) { this->abort(); return; }
+  if (state == GU_HOME_GUIDE && !abort) { this->abort(); return; }
 
   if (guideActionAxis2 > GA_BREAK) {
     if (stopDirection != GA_BREAK && guideActionAxis2 != stopDirection && guideActionAxis2 != GA_HOME) return;
@@ -191,10 +192,15 @@ CommandError Guide::startSpiral(GuideRateSelect rateSelect, unsigned long guideT
 // start guide home (for use with home switches)
 CommandError Guide::startHome() {
   #if GOTO_FEATURE == ON
+    if (state == GU_HOME_GUIDE) { abort(); return CE_NONE; }
+    if (guideActionAxis1 != GA_NONE || guideActionAxis2 != GA_NONE) return CE_SLEW_IN_MOTION;
+    CommandError e = validate(0, GA_HOME); if (e != CE_NONE) return e;
+
     backlashEnableControl(true);
 
     // use guiding and switches to find home
-    guide.state = GU_HOME_GUIDE;
+    mountStatus.sound.alert();
+    state = GU_HOME_GUIDE;
 
     #if AXIS2_TANGENT_ARM == OFF
       guideFinishTimeAxis1 = millis() + (unsigned long)(GUIDE_HOME_TIME_LIMIT * 1000.0);
@@ -219,9 +225,9 @@ void Guide::stop() {
 
 // abort both axes of guide
 void Guide::abort() {
-  if (guide.state == GU_HOME_GUIDE) {
+  if (state == GU_HOME_GUIDE) {
     VLF("MSG: Mount, aborting home guide");
-    state = GU_GUIDE;
+    state = GU_HOME_GUIDE_ABORT;
   }
   stopAxis1(GA_BREAK, true);
   stopAxis2(GA_BREAK, true);
@@ -246,10 +252,14 @@ float Guide::rateSelectToRate(GuideRateSelect rateSelect, uint8_t axis) {
     case GR_4X: return limitGuideRate(4.0F);
     case GR_8X: return limitGuideRate(8.0F);
     case GR_20X: return limitGuideRate(20.0F);
-    case GR_48X: return limitGuideRate(48.0F);
     #if GOTO_FEATURE == ON
+      case GR_48X: return limitGuideRate(48.0F);
       case GR_HALF_MAX: return radToDegF(goTo.rate)*120.0F;
       case GR_MAX: return radToDegF(goTo.rate)*240.0F;
+    #else
+      case GR_48X: return limitGuideRate(20.0F);
+      case GR_HALF_MAX: return limitGuideRate(20.0F);
+      case GR_MAX: return limitGuideRate(20.0F);
     #endif
     case GR_CUSTOM: if (axis == 1) return customRateAxis1; else if (axis == 2) return customRateAxis2; else return 0.0F;
     default: return 0.0F;
@@ -269,6 +279,7 @@ bool Guide::validAxis1(GuideAction guideAction) {
     if (transform.meridianFlips && location.pierSide == PIER_SIDE_EAST) { if (location.h < -limits.settings.pastMeridianE) return false; }
     if (a1 < axis1.settings.limits.min) return false;
   }
+
   if (guideAction == GA_FORWARD || guideAction == GA_SPIRAL) {
     if (transform.meridianFlips && location.pierSide == PIER_SIDE_WEST) { if (location.h > limits.settings.pastMeridianW) return false; }
     if (a1 > axis1.settings.limits.max) return false;
@@ -294,6 +305,7 @@ bool Guide::validAxis2(GuideAction guideAction) {
       if (location.a2 < axis2.settings.limits.min) return false;
     }
   }
+
   if (guideAction == GA_FORWARD || guideAction == GA_SPIRAL) {
     if (pierSide == PIER_SIDE_WEST) {
       if (location.a2 < axis2.settings.limits.min) return false;
@@ -311,7 +323,8 @@ bool Guide::validAxis2(GuideAction guideAction) {
 CommandError Guide::validate(int axis, GuideAction guideAction) {
   if (!mount.isEnabled()) return CE_SLEW_ERR_IN_STANDBY;
   if (mount.isFault()) return CE_SLEW_ERR_HARDWARE_FAULT;
-  if (guideAction == GA_SPIRAL && mount.isSlewing()) return CE_SLEW_IN_MOTION;
+  if ((guideAction == GA_SPIRAL || guideAction == GA_HOME) && mount.isSlewing()) return CE_SLEW_IN_MOTION;
+
   #if GOTO_FEATURE == ON
     if (park.state == PS_PARKED) return CE_SLEW_ERR_IN_PARK;
     if (goTo.state != GS_NONE) { goTo.stop(); return CE_SLEW_IN_MOTION; }
@@ -421,14 +434,17 @@ void Guide::poll() {
   }
 
   // handle end of home guiding
-  if (state == GU_HOME_GUIDE && !mount.isSlewing()) {
-    #if AXIS2_TANGENT_ARM == OFF
+  if ((state == GU_HOME_GUIDE || state == GU_HOME_GUIDE_ABORT) && !mount.isSlewing()) {
+    guideActionAxis1 = GA_NONE;
+    guideActionAxis2 = GA_NONE;
+    mountStatus.sound.alert();
+    if (state == GU_HOME_GUIDE) {
       VLF("MSG: Guide, arrival at home detected");
-      state = GU_NONE;
-      guideActionAxis1 = GA_NONE;
-      guideActionAxis2 = GA_NONE;
-      home.reset(home.isRequestWithReset);
-    #endif
+      #if AXIS2_TANGENT_ARM == OFF
+        state = GU_NONE;
+        home.reset(home.isRequestWithReset);
+      #endif
+    }
   }
 
   // watch for finished guides

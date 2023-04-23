@@ -8,8 +8,8 @@
 #include "../../../../tasks/OnTask.h"
 
 // help with pin names
-#define rx m2
-#define tx m3
+#define rx m3
+#define tx m2
 
 // provide for using hardware serial
 #if SERIAL_TMC == HardSerial
@@ -59,9 +59,17 @@ void ServoTmc2209::init() {
   // initialize the serial port
   VF("MSG: ServoDriver"); V(axisNumber); VF(", TMC ");
   #if defined(SERIAL_TMC_HARDWARE_UART)
-    // help user hard code the device addresses 0,1,2,3
-    digitalWriteEx(Pins->m0, HIGH);
-    digitalWriteEx(Pins->m1, HIGH);
+    #if defined(DEDICATED_MODE_PINS)
+      // program the device address 0,1,2,3 since M0 and M1 are all unique
+    int deviceAddress = SERIAL_TMC_ADDRESS_MAP(axisNumber - 1);
+      digitalWriteEx(Pins->m0, bitRead(deviceAddress, 0));
+      digitalWriteEx(Pins->m1, bitRead(deviceAddress, 1));
+    #else
+      // help user hard code the device address 0,1,2,3 by cutting pins
+      digitalWriteEx(Pins->m0, HIGH);
+      digitalWriteEx(Pins->m1, HIGH);
+    #endif
+
     #define SerialTMC SERIAL_TMC
     static bool initialized = false;
     if (!initialized) {
@@ -86,7 +94,6 @@ void ServoTmc2209::init() {
   driver = new TMC2209Stepper(&SERIAL_TMC, 0.11F, SERIAL_TMC_ADDRESS_MAP(axisNumber - 1));
   driver->begin();
   driver->intpol(true);
-  driver->en_spreadCycle(true);
 
   VF("MSG: ServoDriver"); V(axisNumber); VF(", TMC u-step mode ");
   if (Settings->microsteps == OFF) {
@@ -106,6 +113,7 @@ void ServoTmc2209::init() {
     driver->rms_current(Settings->current*0.707F);
   }
   driver->hold_multiplier(1.0F);
+  driver->en_spreadCycle(true);
 
   // automatically set fault status for known drivers
   status.active = statusMode != OFF;
@@ -119,16 +127,23 @@ void ServoTmc2209::init() {
   #endif
 }
 
-// secondary way to power down not using the enable pin
+// enable or disable the driver using the enable pin or other method
 void ServoTmc2209::enable(bool state) {
   enabled = state;
   if (enablePin == SHARED) {
     VF("MSG: ServoDriver"); V(axisNumber);
     VF(", powered "); if (state) { VF("up"); } else { VF("down"); } VLF(" using UART");
-    int I_run = 0;
-    if (state) { I_run = Settings->current; }
-    driver->rms_current(I_run*0.707F);
+    if (state) {
+      driver->en_spreadCycle(!stealthChop());
+      driver->irun(mAToCs(Settings->current*0.707F));
+      driver->ihold(mAToCs(Settings->current*0.707F));
+    } else {
+      driver->en_spreadCycle(false);
+      driver->ihold(0);
+    }
   } else {
+    VF("MSG: ServoDriver"); V(axisNumber);
+    VF(", powered "); if (state) { VF("up"); } else { VF("down"); } VLF(" using enable pin");
     if (!enabled) { digitalWriteF(enablePin, !enabledState); } else { digitalWriteF(enablePin, enabledState); }
   }
 
@@ -138,7 +153,7 @@ void ServoTmc2209::enable(bool state) {
 }
 
 // set motor velocity (in microsteps/s)
-void ServoTmc2209::setMotorVelocity(float velocity) {
+float ServoTmc2209::setMotorVelocity(float velocity) {
   if (!enabled) velocity = 0.0F;
   if (velocity > velocityMax) velocity = velocityMax; else
   if (velocity < -velocityMax) velocity = -velocityMax;
@@ -155,6 +170,7 @@ void ServoTmc2209::setMotorVelocity(float velocity) {
   if (currentVelocity >= 0.0F) motorDirection = DIR_FORWARD; else motorDirection = DIR_REVERSE;
 
   driver->VACTUAL(round((currentVelocity/0.715F)*2.0F));
+  return currentVelocity;
 }
 
 // update status info. for driver
@@ -162,7 +178,6 @@ void ServoTmc2209::updateStatus() {
   if (statusMode == ON) {
     if ((long)(millis() - timeLastStatusUpdate) > 200) {
 
-      uint32_t status_word;
       TMC2208_n::DRV_STATUS_t status_result;
       status_result.sr = driver->DRV_STATUS();
       status.outputA.shortToGround = status_result.s2ga;
@@ -184,6 +199,18 @@ void ServoTmc2209::updateStatus() {
   } else
   if (statusMode == LOW || statusMode == HIGH) {
     status.fault = digitalReadEx(Pins->fault) == statusMode;
+  }
+}
+
+// calibrate the motor driver if required
+void ServoTmc2209::calibrate() {
+  if (stealthChop()) {
+    VF("MSG: ServoTmc2209 Axis"); V(axisNumber); VL(", TMC standstill automatic current calibration");
+    driver->irun(mAToCs(Settings->current));
+    driver->ihold(mAToCs(Settings->current));
+    ((TMC2209Stepper*)driver)->pwm_autoscale(true);
+    ((TMC2209Stepper*)driver)->en_spreadCycle(false);
+    delay(1000);
   }
 }
 

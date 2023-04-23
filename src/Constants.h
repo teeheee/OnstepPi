@@ -21,18 +21,20 @@
 #define MaxPCB                      8      // first generation custom 4-axis board, Teensy3.5/Teensy3.6
 #define MaxPCB2                     9      // improved second generation for alum. case, Teensy3.5/Teensy3.6
 #define MaxPCB3                     10     // improved third generation for alum. case, Teensy4.1
-#define MaxSTM3                     11     // update to the MaxPCB3 using an Blackpill F411CE instead of the Teensy3.5/3.6
-#define MaxSTM3I                    12     // as above but using an onboard STM32F411CE with M24C64 EEPROM as default
+#define MaxPCB4                     11     // for Teensy4.1 w/TMC2209 support
+#define MaxSTM3                     12     // update to the MaxPCB3 using an Blackpill F411CE instead of the Teensy3.5/3.6
+#define MaxSTM3I                    13     // as above but using an onboard STM32F411CE with M24C64 EEPROM as default
 
-#define MaxESP3                     13     // adds 4th axis and option to flash the WeMos D1 Mini WiFi through OnStep
-#define CNC3                        14     // Arduino CNC Sheild on WeMos D1 R32 (ESP32)
-#define MicroScope                  15     // MicroScope PCB (ESP32, experimental and may be removed at any point!, USE AY YOUR OWN RISK!!!)
+#define MaxESP3                     14     // adds 4th axis and option to flash the WeMos D1 Mini WiFi through OnStep
+#define MaxESP4                     15     // for ESP32S w/TMC2209 support
+#define CNC3                        16     // Arduino CNC Sheild on WeMos D1 R32 (ESP32)
+#define MicroScope                  17     // MicroScope PCB (ESP32, experimental and may be removed at any point!, USE AY YOUR OWN RISK!!!)
 
-#define STM32Blue                   16     // Khalid and Dave's PCB for STM32 Blue pill (STM32F103CB and STM32F303CC)
+#define STM32Blue                   18     // Khalid and Dave's PCB for STM32 Blue pill (STM32F103CB and STM32F303CC)
 
-#define OnstepPi                    17
+#define OnstepPi                    19
 
-#define PINMAP_LAST                 18
+#define PINMAP_LAST                 20
 
 // WEATHER sensors (temperature, pressure, and humidity)
 #define WEATHER_FIRST               1
@@ -76,9 +78,11 @@
 #define TLS_FIRST                   1
 #define DS3231                      1      // DS3231 RTC on I2C
 #define DS3234                      2      // DS3234 RTC on SPI (DS3234_CS_PIN) Makuna library
-#define TEENSY                      3      // TEENSY3.2 RTC (Built-in)
-#define GPS                         4      // GPS device
-#define TLS_LAST                    4
+#define SD3031                      3      // SD3031 RTC on I2C
+#define TEENSY                      4      // TEENSY3.2 RTC (Built-in)
+#define GPS                         5      // GPS device
+#define NTP                         6      // NTP
+#define TLS_LAST                    6
 
 // PIER SIDE
 #define PIER_SIDE_FIRST             1
@@ -114,7 +118,8 @@
 #define DEW_HEATER                  3      // control an dew heater
 #define INTERVALOMETER              4      // control an camera shutter
 #define MOMENTARY_SWITCH            5      // control an simple momentary on/off switch
-#define AUX_FEATURE_PURPOSE_LAST    5
+#define HIDDEN_SWITCH               6      // control an hidden on/off switch (for controlling a pin state at boot)
+#define AUX_FEATURE_PURPOSE_LAST    6
 
 // GPIO devices (pin# 512 up to 543)
 // these can work for most digital I/O EXCEPT: STEP/DIR, 1-WIRE/I2C/SPI (CS is ok), the ST4 port, and the PPS pin
@@ -136,7 +141,7 @@
 // task manager
 #define TASKS_MAX                   48     // up to 48 tasks
 #define TASKS_SKIP_MISSED                  // just skip missed tasks if too late
-#define TASKS_HWTIMERS              4      // up to 4 hardware timers
+#define TASKS_HWTIMERS              3      // up to 3 hardware timers
 
 // default start of axis class hardware timers
 #define AXIS_HARDWARE_TIMER_BASE    2      // in the OnStepX timer#1 is the sidereal clock
@@ -146,7 +151,7 @@
 #define SERIAL_ST4_SERVER_PRESENT
 
 // NV -------------------------------------------------------------------------------------------------------------------
-#define INIT_NV_KEY                 583928929UL
+#define INIT_NV_KEY                 583928934UL
 
 #define NV_KEY                      0      // bytes: 4   , 4
 #define NV_SITE_NUMBER              4      // bytes: 1   , 1
@@ -165,8 +170,9 @@
 #define NV_ALIGN_MODEL_BASE         238    // bytes: 32  , 32
 #define NV_AXIS_SETTINGS_REVERT     270    // bytes: 2   , 2
 #define NV_AXIS_SETTINGS_BASE       272    // bytes: 45*9, 405
-#define NV_FOCUSER_SETTINGS_BASE    677    // bytes: 18*6, 108
-#define NV_ROTATOR_SETTINGS_BASE    785    // bytes: 7   , 7
-#define NV_FEATURE_SETTINGS_BASE    792    // bytes: 3 *8, 24
-#define NV_TELESCOPE_SETTINGS_BASE  816    // bytes: 2   , 2
-#define NV_PEC_BUFFER_BASE          818    // Bytes: ?   , ? + (PEC_BUFFER_SIZE_LIMIT - 1)
+#define NV_FOCUSER_SETTINGS_BASE    677    // bytes: 20*6, 120
+#define NV_ROTATOR_SETTINGS_BASE    797    // bytes: 11  , 11
+#define NV_FEATURE_SETTINGS_BASE    808    // bytes: 3 *8, 24
+#define NV_TELESCOPE_SETTINGS_BASE  832    // bytes: 2   , 2
+
+#define NV_LAST                     833

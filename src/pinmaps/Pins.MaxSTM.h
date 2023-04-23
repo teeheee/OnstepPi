@@ -39,13 +39,14 @@
 
 // The multi-purpose pins (Aux3..Aux8 can be analog pwm/dac if supported)
 #define AUX0_PIN                PB12             // Status LED
+#define AUX1_PIN                PA6              // TMC SPI MISO/Fault
 #define AUX2_PIN                PA13             // PPS
 #define AUX3_PIN                PB13             // Home SW
 #define AUX4_PIN                PB14             // 1-Wire, Home SW
 #define AUX5_PIN                PA9              // TX1 
 #define AUX6_PIN                PA10             // RX1
 #define AUX7_PIN                PB15             // Limit SW
-#define AUX8_PIN                PA8              // Status2 LED, Reticle LED
+#define AUX8_PIN                PA8              // Reticle LED, 1-Wire alternate
 
 // Misc. pins
 #ifndef ONE_WIRE_PIN
@@ -61,7 +62,7 @@
 
 // The status LED is a two wire jumper with a 10k resistor in series to limit the current to the LED
 #define STATUS_LED_PIN          AUX0_PIN         // Default LED Cathode (-)
-#define MOUNT_STATUS_LED_PIN    AUX0_PIN         // Default LED Cathode (-)
+#define MOUNT_LED_PIN           AUX0_PIN         // Default LED Cathode (-)
 #ifndef RETICLE_LED_PIN
   #define RETICLE_LED_PIN       AUX8_PIN         // Default LED Cathode (-)
 #endif
@@ -91,7 +92,6 @@
 #define AXIS1_M3_PIN            PA6              // SPI MISO (UART RX)
 #define AXIS1_STEP_PIN          PB10
 #define AXIS1_DIR_PIN           PB2
-#define AXIS1_DECAY_PIN         AXIS1_M2_PIN
 #ifndef AXIS1_SENSE_HOME_PIN
   #define AXIS1_SENSE_HOME_PIN  AUX3_PIN
 #endif
@@ -101,39 +101,42 @@
 #define AXIS2_M0_PIN            PA7              // SPI MOSI
 #define AXIS2_M1_PIN            PA5              // SPI SCK
 #define AXIS2_M2_PIN            PA0              // SPI CS (UART TX)
-#define AXIS2_M3_PIN            PA6              // SPI MISO (UART RX)
+#define AXIS2_M3_PIN            AUX1_PIN         // SPI MISO (UART RX)
 #define AXIS2_STEP_PIN          PA4
 #define AXIS2_DIR_PIN           PB0
-#define AXIS2_DECAY_PIN         AXIS2_M2_PIN
 #ifndef AXIS2_SENSE_HOME_PIN
   #define AXIS2_SENSE_HOME_PIN  AUX4_PIN
 #endif
 
 // For rotator stepper driver
+#define SHARED_DIRECTION_PINS                    // Hint that the direction pins are shared
 #define AXIS3_ENABLE_PIN        OFF
 #define AXIS3_M0_PIN            PA7              // SPI MOSI
 #define AXIS3_M1_PIN            PA5              // SPI SCK
 #define AXIS3_M2_PIN            PC15             // SPI CS (UART TX)
-#define AXIS3_M3_PIN            PA6              // SPI MISO (UART RX)
+#define AXIS3_M3_PIN            AUX1_PIN         // SPI MISO (UART RX)
 #define AXIS3_STEP_PIN          PB8
-#define SHARED_DIRECTION_PINS                    // Hint that the direction pins are shared
 #define AXIS3_DIR_PIN           PC13
+#define AXIS1_ENCODER_A_PIN     AXIS3_STEP_PIN
+#define AXIS1_ENCODER_B_PIN     AXIS3_DIR_PIN
 
 // For focuser1 stepper driver
 #define AXIS4_ENABLE_PIN        OFF
 #define AXIS4_M0_PIN            PA7              // SPI MOSI
 #define AXIS4_M1_PIN            PA5              // SPI SCK
 #define AXIS4_M2_PIN            PC14             // SPI CS (UART TX)
-#define AXIS4_M3_PIN            PA6              // SPI MISO (UART RX)
+#define AXIS4_M3_PIN            AUX1_PIN         // SPI MISO (UART RX)
 #define AXIS4_STEP_PIN          PB9
 #define AXIS4_DIR_PIN           PC13
+#define AXIS2_ENCODER_A_PIN     AXIS3_STEP_PIN
+#define AXIS2_ENCODER_B_PIN     AUX1_PIN
 
 // For focuser2 stepper driver
 #define AXIS5_ENABLE_PIN        OFF
 #define AXIS5_M0_PIN            PA7              // SPI MOSI
 #define AXIS5_M1_PIN            PA5              // SPI SCK
 #define AXIS5_M2_PIN            PC15             // SPI CS (UART TX)
-#define AXIS5_M3_PIN            PA6              // SPI MISO (UART RX)
+#define AXIS5_M3_PIN            AUX1_PIN         // SPI MISO (UART RX)
 #define AXIS5_STEP_PIN          PB8
 #define AXIS5_DIR_PIN           PC13
 

@@ -17,7 +17,7 @@ bool Guide::command(char *reply, char *command, char *parameter, bool *supressFr
   //            Returns: n.nn#
   if (command[0] == 'G' && command[1] == 'X' && parameter[0] == '9' && parameter[1] == '0' && parameter[2] == 0) {
     sprintF(reply, "%0.2f", rateSelectToRate(settings.pulseRateSelect));
-     *numericReply = false;
+    *numericReply = false;
   } else
 
   // M - Telescope Movement (Guiding) Commands
@@ -112,7 +112,7 @@ bool Guide::command(char *reply, char *command, char *parameter, bool *supressFr
     #if GOTO_FEATURE == ON
       float maxDegsPerSec = radToDegF(goTo.rate);
     #else
-      float maxDegsPerSec = 0.2F;
+      float maxDegsPerSec = 0.083333333F;
     #endif
 
     // :RA[n.n]#  Set Axis1 Guide rate to n.n degrees per second
@@ -157,9 +157,14 @@ bool Guide::command(char *reply, char *command, char *parameter, bool *supressFr
     //            Note: Tracking, if active, is integrated in this mode of operation
     if (strchr("GCMFS0123456789", command[1]) && parameter[0] == 0) {
       int r;
-      if (command[1] == 'G') r = 2; else if (command[1] == 'C') r = 5; else
-      if (command[1] == 'M') r = 6; else if (command[1] == 'F') r = 7; else
+      if (command[1] == 'G') r = 2; else
+      if (command[1] == 'C') r = 5; else
+      if (command[1] == 'M') r = 6; else
+      if (command[1] == 'F') r = 7; else
       if (command[1] == 'S') r = 8; else r = command[1] - '0';
+      #if GOTO_FEATURE != ON
+        if (r > 6) r = 6;
+      #endif
       settings.axis1RateSelect = (GuideRateSelect)r;
       settings.axis2RateSelect = (GuideRateSelect)r;
       VF("MSG: Guide rate "); V(r); VLF(" selected");

@@ -34,6 +34,7 @@
 // RETICLE CONTROL ------------------------------- see https://onstep.groups.io/g/main/wiki/Configuration_Controller#RETICLE_CONTROL
 #define RETICLE_LED_DEFAULT           OFF //    OFF, n. Where n=0..255 (0..100%) activates feature sets default brightness.   Option
 #define RETICLE_LED_MEMORY            OFF //    OFF, ON Remember reticle brightness across power cycles.                      Option
+#define RETICLE_LED_INVERT            OFF //    OFF, ON Inverts state for cases where 0% is full brightness otherwise.        Option
 
 // WEATHER SENSOR --------------------------------- see https://onstep.groups.io/g/main/wiki/Configuration_Controller#WEATHER_SENSOR
 #define WEATHER                       OFF //    OFF, BME280 (I2C 0x77,) BME280_0x76, BME280_SPI (see pinmap for CS.)          Option
@@ -146,6 +147,8 @@
                                           //              at the poles. Use TOPO_STRICT to apply refraction even in that case.
                                           //              Use OBSERVED_PLACE for no refraction.
 
+#define MOUNT_ENABLE_AT_STARTUP       OFF //    OFF, ON Enables mount motor drivers at startup.                               Infreq
+
 // TIME AND LOCATION ---------------------------------------------- see https://onstep.groups.io/g/main/wiki/Configuration_Mount#TLS
 #define TIME_LOCATION_SOURCE          TEENSY //    OFF, DS3231 (I2c,) DS3234 (Spi,) TEENSY (T3.2 internal,) GPS, or NTP source.  Option
                                           //         Provides Date/Time, and if available, PPS & Lat/Long also.
@@ -174,6 +177,8 @@
 
 // LIMITS ------------------------------------------------------ see https://onstep.groups.io/g/main/wiki/Configuration_Mount#LIMITS
 #define LIMIT_SENSE                   OFF //    OFF, HIGH or LOW state on limit sense switch stops movement.                  Option
+#define LIMIT_STRICT                  OFF //    OFF, disables limits until unpark goto or sync. ON enables limits at startup. Option
+                                          //         note that ON also disables all motion until date/time are set.
 
 // PARKING ---------------------------------------------------- see https://onstep.groups.io/g/main/wiki/Configuration_Mount#PARKING
 #define PARK_SENSE                    OFF //    OFF, HIGH or LOW state indicates mount is in the park orientation.            Option
@@ -190,7 +195,7 @@
 #define PEC_BUFFER_SIZE_LIMIT         720 //    720, Seconds of PEC buffer allowed.                                           Infreq
 
 // TRACKING BEHAVIOUR ---------------------------------------- see https://onstep.groups.io/g/main/wiki/Configuration_Mount#TRACKING
-#define TRACK_BACKLASH_RATE            25 //     25, n. Where n=2..50 (x sidereal rate) during backlash takeup.               Option
+#define TRACK_BACKLASH_RATE            20 //     20, n. Where n=2..50 (x sidereal rate) during backlash takeup.               Option
                                           //         Too fast motors stall/gears slam or too slow and sluggish in backlash.
 #define TRACK_AUTOSTART               ON //    OFF, ON Start with tracking enabled.                                          Option
 #define TRACK_COMPENSATION_DEFAULT    OFF //    OFF, No compensation or REFRACTION, REFRACTION_DUAL, MODEL, MODEL_DUAL.       Option
@@ -204,7 +209,7 @@
 #define SLEW_RAPID_STOP_DIST          2.0 //    2.0, n, (degrees.) Approx. distance required to stop when a slew              Adjust
                                           //         is aborted or a limit is exceeded.
 #define GOTO_FEATURE                   ON //     ON, Use OFF to disable mount Goto features.                                  Infreq
-#define GOTO_OFFSET                  0.25 //   0.25, Offset in deg's for goto target unidirectional approach, 0.0 disables    Option
+#define GOTO_OFFSET                  0.25 //   0.25, Offset in deg's for goto target unidirectional approach, 0.0 disables    Adjust
 #define GOTO_OFFSET_ALIGN             OFF //    OFF, ON skips final phase of goto for align stars so user tends to approach   Option
                                           //         from the correct direction when centering.
 
@@ -232,7 +237,8 @@
 
 // AXIS3 ROTATOR --------------------------------------- see https://onstep.groups.io/g/developer/wiki/Configuration_Rotator_Focuser
 #define AXIS3_DRIVER_MODEL            OFF //    OFF, Enter motor driver model (above) to activate the rotator.                Option
-#define AXIS3_SLEW_RATE_DESIRED       1.0 //    1.0, n, (degrees/second) Maximum speed depends on processor.                  Adjust
+#define AXIS3_SLEW_RATE_BASE_DESIRED  1.0 //    1.0, n. Desired slew rate in deg/sec. Adjustable at run-time from            <-Req'd
+                                          //         1/2 to 2x this rate, and as performance considerations require.
 
 // If runtime axis settings are enabled changes in the section below may be ignored unless you reset to defaults:
 // \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/
@@ -269,8 +275,6 @@
 // Typically: A4988, DRV8825, LV8729, S109, TMC2130S, etc.
 
 // AXIS4 FOCUSER 1 ------------------------------------- see https://onstep.groups.io/g/developer/wiki/Configuration_Rotator_Focuser
-#define FOCUSER1 ON
-
 #define AXIS4_DRIVER_MODEL            TMC2130S //    OFF, Enter motor driver model (above) to activate the focuser.                Option
 #define AXIS4_SLEW_RATE_DESIRED       500 //    500, n, Where n=200..5000 (um/s.) Desired (maximum) microns/second.           Adjust
 #define AXIS4_SLEW_RATE_MINIMUM         2 //      2, n. Where n=1..10 (um/s.) Minimum microns/second.                         Adjust
@@ -303,8 +307,6 @@
 #define AXIS4_SENSE_LIMIT_MAX         OFF //    OFF, HIGH or LOW state on limit sense switch stops movement.                  Option
 
 // AXIS5 FOCUSER 2 -----------------------------------------------------------------------------------------------------------------
-#define FOCUSER2 ON
-
 #define AXIS5_DRIVER_MODEL            TMC2130S //    OFF, Enter motor driver model (above) to activate the focuser.                Option
 #define AXIS5_SLEW_RATE_DESIRED       500 //    500, n, Where n=200..5000 (um/s.) Desired (maximum) microns/second.           Adjust
 #define AXIS5_SLEW_RATE_MINIMUM         2 //      2, n. Where n=1..10 (um/s.) Minimum microns/second.                         Adjust

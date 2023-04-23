@@ -9,6 +9,7 @@
 #include "../../lib/axis/Axis.h"
 #include "../../libApp/commands/ProcessCmds.h"
 #include "coordinates/Transform.h"
+#include "home/Home.h"
 
 enum RateCompensation: uint8_t {RC_NONE, RC_REFRACTION, RC_REFRACTION_DUAL, RC_MODEL, RC_MODEL_DUAL};
 
@@ -45,6 +46,7 @@ extern Axis axis2;
 class Mount {
   public:
     void init();
+    void begin();
 
     bool command(char *reply, char *command, char *parameter, bool *supressFrame, bool *numericReply, CommandError *commandError);
 
@@ -57,11 +59,11 @@ class Mount {
     // returns true if either of the mount motor drivers reported a fault
     inline bool isFault() { return axis1.fault() || axis2.fault(); }
 
-    // set flag for mount at the home (startup) position
-    inline void setHome(bool state) { atHome = state; };
-
     // returns true if the mount is at the home (startup) position
-    inline bool isHome() { return atHome; }
+    inline bool isHome() {
+      return abs(axis1.getInstrumentCoordinate() - home.position.a1) <= arcsecToRad(AXIS1_TARGET_TOLERANCE) &&
+             abs(axis2.getInstrumentCoordinate() - home.position.a2) <= arcsecToRad(AXIS2_TARGET_TOLERANCE);
+    }
 
     // returns true if the mount is slewing (doing a goto or guide > 2X)
     inline bool isSlewing() { return axis1.isSlewing() || axis2.isSlewing(); }
@@ -91,9 +93,11 @@ class Mount {
 
     void poll();
 
-    float trackingRate = 1.0F;
-    float trackingRateAxis1 = 0.0F;
-    float trackingRateAxis2 = 0.0F;
+    float trackingRate = 1.0F;            // in sidereal units 1x = 15 arc-seconds/sidereal second
+    float trackingRateAxis1 = 0.0F;       // in sidereal units 1x = 15 arc-seconds/sidereal second
+    float trackingRateAxis2 = 0.0F;       // in sidereal units 1x = 15 arc-seconds/sidereal second
+    float trackingRateOffsetRA = 0.0F;    // in sidereal units 1x = 15 arc-seconds/sidereal second
+    float trackingRateOffsetDec = 0.0F;   // in sidereal units 1x = 15 arc-seconds/sidereal second
 
     MountSettings settings = {RC_DEFAULT, { 0, 0 }};
 
@@ -116,8 +120,6 @@ class Mount {
     TrackingState trackingState = TS_NONE;
 
     bool syncToEncodersEnabled = false;
-
-    bool atHome = true;
 };
 
 #ifdef AXIS1_STEP_DIR_PRESENT

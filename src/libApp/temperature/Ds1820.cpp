@@ -8,7 +8,7 @@
 #include "../../lib/tasks/OnTask.h"
 
 #include "../../lib/1wire/1Wire.h"
-#include <DallasTemperature.h>        // my DallasTemperature library https://github.com/hjd1964/Arduino-Temperature-Control-Library
+#include <DallasTemperature.h>        // my Dallas Temperature library https://github.com/hjd1964/Arduino-DS1820-Temperature-Library
 DallasTemperature DS18X20(&oneWire);
 
 #include "../weather/Weather.h"
@@ -123,7 +123,7 @@ void Ds1820::poll() {
 
 // nine temperature sensors are supported, this gets the averaged temperature
 // in deg. C otherwise it falls back to the weather sensor temperature
-// index 0 is the focuser temperature, 1 through 8 are auxiliary features #1, #2, etc.
+// index 0 is the ambient temperature, 1 through 8 are point temperatures #1, #2, etc.
 // returns NAN if no temperature source is available or if a communications failure
 // results in no valid readings for > 30 seconds
 float Ds1820::getChannel(int index) {

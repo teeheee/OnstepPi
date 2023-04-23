@@ -36,7 +36,7 @@
 #define AUX3_PIN                21               // Home SW for Axis1, or I2C SDA
 #define AUX4_PIN                22               // Home SW for Axis2, or I2C SCL
 #define AUX7_PIN                39               // Limit SW, PPS, etc.
-#define AUX8_PIN                25               // 1-Wire, Status LED, Status2 LED, Reticle LED, Tone, etc.
+#define AUX8_PIN                25               // 1-Wire, Status LED, Reticle LED, Tone, etc.
 
 // Misc. pins
 #ifndef ONE_WIRE_PIN
@@ -56,7 +56,7 @@
 #ifndef STATUS_LED_PIN
   #define STATUS_LED_PIN        AUX8_PIN         // Default LED Cathode (-)
 #endif
-#define MOUNT_STATUS_LED_PIN    STATUS_LED_PIN   // Default LED Cathode (-)
+#define MOUNT_LED_PIN           STATUS_LED_PIN   // Default LED Cathode (-)
 #ifndef RETICLE_LED_PIN 
   #define RETICLE_LED_PIN       STATUS_LED_PIN   // Default LED Cathode (-)
 #endif
@@ -76,20 +76,24 @@
   #define LIMIT_SENSE_PIN       AUX7_PIN
 #endif
 
+#define SHARED_DIRECTION_PINS                    // Hint that the direction pins are shared
+#define SHARED_ENABLE_PIN       12               // Hint that the enable pins are shared
+
 // Axis1 RA/Azm step/dir driver
-#define AXIS1_ENABLE_PIN        12               // [must be low at boot 12]
+#define AXIS1_ENABLE_PIN        SHARED           // [must be low at boot 12]
 #define AXIS1_M0_PIN            13               // SPI MOSI
 #define AXIS1_M1_PIN            14               // SPI SCK
 #define AXIS1_M2_PIN            23               // SPI CS (UART TX)
 #if AXIS4_POWER_DOWN != ON
-#define AXIS1_M3_PIN            AUX2_PIN         // SPI MISO (UART RX)
+  #define AXIS1_M3_PIN          AUX2_PIN         // SPI MISO (UART RX)
 #endif
 #define AXIS1_STEP_PIN          18
 #define AXIS1_DIR_PIN           0                // [must be high at boot 0]
-#define AXIS1_DECAY_PIN         AXIS1_M2_PIN
 #ifndef AXIS1_SENSE_HOME_PIN
   #define AXIS1_SENSE_HOME_PIN  AUX3_PIN
 #endif
+#define AXIS1_SERVO_PH1_PIN     AXIS1_DIR_PIN
+#define AXIS1_SERVO_PH2_PIN     AXIS1_STEP_PIN
 
 // Axis2 Dec/Alt step/dir driver
 #define AXIS2_ENABLE_PIN        SHARED
@@ -97,14 +101,15 @@
 #define AXIS2_M1_PIN            14               // SPI SCK
 #define AXIS2_M2_PIN            5                // SPI CS (UART TX)
 #if AXIS4_POWER_DOWN != ON
-#define AXIS2_M3_PIN            AUX2_PIN         // SPI MISO (UART RX)
+  #define AXIS2_M3_PIN          AUX2_PIN         // SPI MISO (UART RX)
 #endif
 #define AXIS2_STEP_PIN          27
 #define AXIS2_DIR_PIN           26
-#define AXIS2_DECAY_PIN         AXIS2_M2_PIN
 #ifndef AXIS2_SENSE_HOME_PIN
   #define AXIS2_SENSE_HOME_PIN  AUX4_PIN
 #endif
+#define AXIS2_SERVO_PH1_PIN     AXIS2_DIR_PIN
+#define AXIS2_SERVO_PH2_PIN     AXIS2_STEP_PIN
 
 // For rotator stepper driver
 #define AXIS3_ENABLE_PIN        OFF              // No enable pin control (always enabled)
@@ -113,13 +118,12 @@
 #define AXIS3_M2_PIN            OFF              // SPI CS (UART TX)
 #define AXIS3_M3_PIN            OFF              // SPI MISO (UART RX)
 #define AXIS3_STEP_PIN          2                // [must be low at boot 2]
-#define SHARED_DIRECTION_PINS                    // Hint that the direction pins are shared
 #define AXIS3_DIR_PIN           15
+#define AXIS1_ENCODER_A_PIN     AXIS3_STEP_PIN
+#define AXIS1_ENCODER_B_PIN     AXIS3_DIR_PIN
 
 // For focuser1 stepper driver
-#ifdef SERIAL_TMC_HARDWARE_UART
-  #define AXIS4_ENABLE_PIN      OFF
-#else
+#if !defined(SERIAL_TMC_HARDWARE_UART) && AXIS4_POWER_DOWN == ON
   #define AXIS4_ENABLE_PIN      AUX2_PIN
 #endif
 #define AXIS4_M0_PIN            OFF              // SPI MOSI
@@ -128,6 +132,8 @@
 #define AXIS4_M3_PIN            OFF              // SPI MISO (UART RX)
 #define AXIS4_STEP_PIN          19
 #define AXIS4_DIR_PIN           15
+#define AXIS2_ENCODER_A_PIN     AXIS3_STEP_PIN
+#define AXIS2_ENCODER_B_PIN     AUX2_PIN
 
 // For focuser2 stepper driver
 #define AXIS5_ENABLE_PIN        OFF              // No enable pin control (always enabled)
