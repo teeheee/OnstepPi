@@ -129,8 +129,8 @@
 #define AXIS4_M1_PIN           OFF               // SPI SCK
 #define AXIS4_M2_PIN           OFF               // SPI CS
 #define AXIS4_M3_PIN           OFF               // SPI MISO
-#define AXIS4_STEP_PIN         39
-#define AXIS4_DIR_PIN          35
+#define AXIS4_STEP_PIN         28 
+#define AXIS4_DIR_PIN          29
 
 // For focuser2 stepper driver
 #define AXIS5_ENABLE_PIN       TMC_ENABLE
@@ -138,8 +138,8 @@
 #define AXIS5_M1_PIN           OFF               // SPI SCK
 #define AXIS5_M2_PIN           OFF               // SPI CS
 #define AXIS5_M3_PIN           OFF               // SPI MISO
-#define AXIS5_STEP_PIN         28
-#define AXIS5_DIR_PIN          29
+#define AXIS5_STEP_PIN         39
+#define AXIS5_DIR_PIN          35
 #define AXIS5_SENSE_HOME_PIN   31
 
 // ST4 interface

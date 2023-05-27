@@ -88,6 +88,8 @@ bool Focuser::command(char *reply, char *command, char *parameter, bool *supress
       char temp[32];
       strcpy(temp, &parameter[1]);
       strcpy(&parameter[0], temp);
+    } else if(i >= 6 && i <= 9) {
+      return false;
     } else index = active;
 
     // check for no default focuser
@@ -107,6 +109,15 @@ bool Focuser::command(char *reply, char *command, char *parameter, bool *supress
       StepsToUnits = 1.0F;
       UnitsToSteps = 1.0F;
     }
+
+    // :FA#       Get enabled focuser
+    //            Returns: 1 true if active
+    if (command[1] == 'A') {
+      if (axes[index] == NULL) { *commandError = CE_0; return true; }
+      sprintf(reply, "1");
+      *numericReply = false;
+      *supressFrame = true;
+    } else
 
     // :Fa#       Get primary focuser
     //            Returns: 1 true if active
@@ -153,7 +164,11 @@ bool Focuser::command(char *reply, char *command, char *parameter, bool *supress
     // :Ft#       Get focuser temperature
     //            Returns: n# temperature in deg. C
     if (command[1] == 't') {
-      sprintF(reply, "%3.1f", getTemperature());
+      float temp = getTemperature();
+      if(temp == temp)
+        sprintF(reply, "%3.1f", temp);
+      else
+        sprintF(reply, "%3.1f", 0.0);
       *numericReply = false;
     } else
 

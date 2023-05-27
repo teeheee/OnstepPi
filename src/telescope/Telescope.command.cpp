@@ -150,6 +150,13 @@ bool Telescope::command(char reply[], char command[], char parameter[], bool *su
 
     if (command[1] == 'X' && parameter[2] == 0) {
       if (parameter[0] == '9') {
+#if AXIS3_DRIVER_MODEL == OFF
+        // :GX98#     Get rotator availablity -> rotator disabled, return N for None
+        if (parameter[1] == '8') {
+          sprintf(reply, "N");
+          *numericReply = false;
+        } else 
+#endif  
         // :GX9A#     temperature in deg. C
         //            Returns: +/-n.n
         if (parameter[1] == 'A') {
@@ -177,7 +184,8 @@ bool Telescope::command(char reply[], char command[], char parameter[], bool *su
           sprintF(reply, "%3.1f", weather.getDewPoint());
           *numericReply = false;
         } else return false;
-      } else
+
+      }else
 
       if (parameter[0] == 'A') {
         // :GXA0#     Get axis/driver revert all state

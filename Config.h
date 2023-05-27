@@ -275,7 +275,9 @@
 // Typically: A4988, DRV8825, LV8729, S109, TMC2130S, etc.
 
 // AXIS4 FOCUSER 1 ------------------------------------- see https://onstep.groups.io/g/developer/wiki/Configuration_Rotator_Focuser
-#define AXIS4_DRIVER_MODEL            TMC2130S //    OFF, Enter motor driver model (above) to activate the focuser.                Option
+#define FOCUSER1 ON
+
+#define AXIS4_DRIVER_MODEL            A4988 //    OFF, Enter motor driver model (above) to activate the focuser.                Option
 #define AXIS4_SLEW_RATE_BASE_DESIRED       500 //    500, n, Where n=200..5000 (um/s.) Desired (maximum) microns/second.           Adjust
 #define AXIS4_SLEW_RATE_MINIMUM         20 //      2, n. Where n=1..10 (um/s.) Minimum microns/second.                         Adjust
 
@@ -307,7 +309,9 @@
 #define AXIS4_SENSE_LIMIT_MAX         OFF //    OFF, HIGH or LOW state on limit sense switch stops movement.                  Option
 
 // AXIS5 FOCUSER 2 -----------------------------------------------------------------------------------------------------------------
-#define AXIS5_DRIVER_MODEL            TMC2130S //    OFF, Enter motor driver model (above) to activate the focuser.                Option
+#define FOCUSER2 ON
+
+#define AXIS5_DRIVER_MODEL            A4988 //    OFF, Enter motor driver model (above) to activate the focuser.                Option
 #define AXIS5_SLEW_RATE_BASE_DESIRED       500 //    500, n, Where n=200..5000 (um/s.) Desired (maximum) microns/second.           Adjust
 #define AXIS5_SLEW_RATE_MINIMUM         20 //      2, n. Where n=1..10 (um/s.) Minimum microns/second.                         Adjust
 
@@ -334,7 +338,7 @@
 
 #define AXIS5_POWER_DOWN              OFF //    OFF, ON Powers off 30 seconds after movement stops.                           Option
 
-#define AXIS5_SENSE_HOME              LOW //    OFF, HIGH or LOW enables & state clockwise home position, as seen from above. Option
+#define AXIS5_SENSE_HOME              HIGH //    OFF, HIGH or LOW enables & state clockwise home position, as seen from above. Option
 #define AXIS5_SENSE_LIMIT_MIN         OFF //    OFF, HIGH or LOW state on limit sense switch stops movement.                  Option
 #define AXIS5_SENSE_LIMIT_MAX         OFF //    OFF, HIGH or LOW state on limit sense switch stops movement.                  Option
 // Up to 6 focusers can be present (AXIS4 to AXIS9) simply copy the above text for focuser 1 and rename to AXIS5_ for focuser 2, etc
