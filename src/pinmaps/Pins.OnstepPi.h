@@ -78,8 +78,10 @@
 #define TMC_SCK     32
 #define TMC_ENABLE  14
 
+#define SHARED_ENABLE_PIN TMC_ENABLE
+
 // Axis1 RA/Azm step/dir driver
-#define AXIS1_ENABLE_PIN       TMC_ENABLE
+#define AXIS1_ENABLE_PIN       SHARED
 #define AXIS1_M0_PIN           TMC_MOSI          // SPI MOSI
 #define AXIS1_M1_PIN           TMC_SCK           // SPI SCK
 #define AXIS1_M2_PIN           11                // SPI CS (UART TX)
@@ -97,7 +99,7 @@
 #define AXIS1_SERVO_PH2_PIN    OFF
 
 // Axis2 Dec/Alt step/dir driver
-#define AXIS2_ENABLE_PIN       TMC_ENABLE
+#define AXIS2_ENABLE_PIN       SHARED
 #define AXIS2_M0_PIN           TMC_MOSI                 // SPI MOSI
 #define AXIS2_M1_PIN           TMC_SCK                 // SPI SCK
 #define AXIS2_M2_PIN           26                 // SPI CS (UART TX)
@@ -124,7 +126,7 @@
 #define AXIS3_DIR_PIN          OFF
 
 // For focuser1 stepper driver
-#define AXIS4_ENABLE_PIN       TMC_ENABLE
+#define AXIS4_ENABLE_PIN       SHARED
 #define AXIS4_M0_PIN           OFF               // SPI MOSI
 #define AXIS4_M1_PIN           OFF               // SPI SCK
 #define AXIS4_M2_PIN           OFF               // SPI CS
@@ -133,7 +135,7 @@
 #define AXIS4_DIR_PIN          29
 
 // For focuser2 stepper driver
-#define AXIS5_ENABLE_PIN       TMC_ENABLE
+#define AXIS5_ENABLE_PIN       SHARED
 #define AXIS5_M0_PIN           OFF               // SPI MOSI
 #define AXIS5_M1_PIN           OFF               // SPI SCK
 #define AXIS5_M2_PIN           OFF               // SPI CS
